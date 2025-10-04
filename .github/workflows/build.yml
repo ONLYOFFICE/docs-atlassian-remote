@@ -1,0 +1,58 @@
+name: Build onlyoffice-jira-cloud
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Specify tag (e.g. 1.0.0, 1.0.0-rc2, sha)'
+        type: string
+        required: true
+      repo:
+        description: 'Choose registry'
+        default: test
+        type: choice
+        options: [test, prod]
+
+env:
+  TAG: ${{ github.event.inputs.tag }}
+  IMAGE_NAME: onlyoffice-jira-cloud
+  REGISTRY: ${{ (inputs.repo == 'test') && secrets.DOCKER_TEST_REGISTRY || 'docker.io/onlyoffice' }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ (inputs.repo == 'test') && secrets.DOCKER_TEST_REGISTRY || 'docker.io' }}
+          username: ${{ (inputs.repo == 'test') && secrets.DOCKER_TEST_USERNAME || secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ (inputs.repo == 'test') && secrets.DOCKER_TEST_ACCESS_TOKEN || secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build image
+        run: |
+          docker build --no-cache -f Dockerfile -t ${REGISTRY}/${IMAGE_NAME}:${TAG} . || echo "BUILD_FAILED=true" >> $GITHUB_ENV
+
+      - name: Push image
+        run: |
+          docker push ${REGISTRY}/${IMAGE_NAME}:${TAG} || echo "PUSH_FAILED=true" >> $GITHUB_ENV
+
+      - name: Final Check for Failures
+        if: always()
+        run: |
+          FAILED_COMPONENTS=""
+          [ "$BUILD_FAILED" == "true" ] && FAILED_COMPONENTS="${FAILED_COMPONENTS}\n - Build failed"
+          [ "$PUSH_FAILED" == "true" ] && FAILED_COMPONENTS="${FAILED_COMPONENTS}\n - Push failed"
+
+          if [ -n "$FAILED_COMPONENTS" ]; then
+            echo -e "❌ Build pipeline failed:${FAILED_COMPONENTS}"
+            exit 1
+          else
+            echo "✅ Image ${REGISTRY}/${IMAGE_NAME}:${TAG} built and pushed successfully."
+          fi
+
