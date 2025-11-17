@@ -32,7 +32,7 @@ public class ClientConfiguration {
     private String atlassianApiBaseUrl;
 
     @Bean
-    WebClient jiraWebClient() {
+    WebClient atlassianWebClient() {
         return WebClient.builder()
                 .baseUrl(atlassianApiBaseUrl)
                 .clientConnector(new ReactorClientHttpConnector(

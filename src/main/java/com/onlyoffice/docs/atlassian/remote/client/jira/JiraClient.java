@@ -44,11 +44,11 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class JiraClient {
-    private final WebClient jiraWebClient;
+    private final WebClient atlassianWebClient;
 
     @RequestCacheable
     public JiraUser getUser(final String cloudId, final String token) {
-        return jiraWebClient.get()
+        return atlassianWebClient.get()
                 .uri("/ex/jira/{cloudId}/rest/api/3/myself", cloudId)
                 .headers(httpHeaders -> {
                     httpHeaders.setBearerAuth(token);
@@ -60,7 +60,7 @@ public class JiraClient {
 
     @RequestCacheable
     public JiraAttachment getAttachment(final UUID cloudId, final String attachmentId, final String token) {
-        return jiraWebClient.get()
+        return atlassianWebClient.get()
                 .uri("/ex/jira/{cloudId}/rest/api/3/attachment/{attachmentId}", cloudId, attachmentId)
                 .headers(httpHeaders -> {
                     httpHeaders.setBearerAuth(token);
@@ -71,7 +71,7 @@ public class JiraClient {
     }
 
     public ClientResponse getAttachmentData(final String cloudId, final String attachmentId, final String token) {
-        return jiraWebClient.get()
+        return atlassianWebClient.get()
                 .uri("/ex/jira/{cloudId}/rest/api/3/attachment/content/{attachmentId}",
                         cloudId, attachmentId)
                 .headers(h -> h.setBearerAuth(token))
@@ -86,7 +86,7 @@ public class JiraClient {
                 .filename(fileName)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM);
 
-        return jiraWebClient.post()
+        return atlassianWebClient.post()
                 .uri("/ex/jira/{cloudId}/rest/api/3/issue/{issueKey}/attachments", cloudId, issueId)
                 .headers(httpHeaders -> {
                     httpHeaders.setBearerAuth(token);
@@ -100,7 +100,7 @@ public class JiraClient {
     }
 
     public void deleteAttachment(final UUID cloudId, final String attachmentId, final String token) {
-        jiraWebClient.delete()
+        atlassianWebClient.delete()
                 .uri("/ex/jira/{cloudId}/rest/api/3/attachment/{attachmentId}", cloudId, attachmentId)
                 .headers(httpHeaders -> {
                     httpHeaders.setBearerAuth(token);
@@ -113,7 +113,7 @@ public class JiraClient {
     @RequestCacheable
     public JiraPermissions getIssuePermissions(final UUID cloudId, final String issueId,
                                                final List<JiraPermissionsKey> permissions, final String token) {
-        return jiraWebClient.get()
+        return atlassianWebClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/ex/jira/{cloudId}/rest/api/3/mypermissions")
                         .queryParam("issueId", issueId)
@@ -130,7 +130,7 @@ public class JiraClient {
 
     @RequestCacheable
     public JiraSettings getSettings(final String settingsKey, final String token) {
-        return jiraWebClient.post()
+        return atlassianWebClient.post()
                 .uri("/forge/storage/kvs/v1/secret/get")
                 .headers(httpHeaders -> {
                     httpHeaders.setBearerAuth(token);
