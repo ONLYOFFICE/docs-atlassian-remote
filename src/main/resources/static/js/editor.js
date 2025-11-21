@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             );
 
-            fetch(`/editor/jira?${params.toString()}`, {
+            fetch(`${window.location.pathname}?${params.toString()}`, {
                 method: "GET",
             }).then(async (response) => {
                 if (!response.ok) {
