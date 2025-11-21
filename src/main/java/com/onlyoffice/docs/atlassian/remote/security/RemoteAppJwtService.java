@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
 import org.springframework.beans.factory.annotation.Value;
@@ -119,6 +120,9 @@ public class RemoteAppJwtService {
                                 switch (Product.valueOf(product)) {
                                     case JIRA:
                                         objectMapper.convertValue(contextAsMap, JiraContext.class);
+                                        return true;
+                                    case CONFLUENCE:
+                                        objectMapper.convertValue(contextAsMap, ConfluenceContext.class);
                                         return true;
                                     default:
                                         return false;

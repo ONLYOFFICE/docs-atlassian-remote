@@ -19,6 +19,7 @@
 package com.onlyoffice.docs.atlassian.remote.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
@@ -66,6 +67,8 @@ public final class SecurityUtils {
         switch (Product.valueOf(product)) {
             case JIRA:
                 return (Context) OBJECT_MAPPER.convertValue(contextAsMap, JiraContext.class);
+            case CONFLUENCE:
+                return (Context) OBJECT_MAPPER.convertValue(contextAsMap, ConfluenceContext.class);
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + product);
         }

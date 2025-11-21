@@ -12,6 +12,8 @@ forge:
   products:
     JIRA:
       appId: ari:cloud:ecosystem::app/${FORGE_JIRA_APP_ID}
+    CONFLUENCE:
+      appId: ari:cloud:ecosystem::app/${FORGE_CONFLUENCE_APP_ID}
 
 spring:
   security:
@@ -22,6 +24,7 @@ spring:
           issuer-uri: forge/invocation-token
           audiences:
             - ${forge.products.JIRA.appId}
+            - ${forge.products.CONFLUENCE.appId}
           principal-claim-name: principal
           principal-attribute: principal
           jwk-ttl-in-days: 20
