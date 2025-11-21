@@ -18,8 +18,6 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
-import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
-import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.manager.settings.SettingsManager;
 import com.onlyoffice.model.documenteditor.Callback;
 import com.onlyoffice.service.documenteditor.callback.CallbackService;
@@ -43,14 +41,11 @@ public class CallbackController {
     private final SettingsManager settingsManager;
     private final CallbackService callbackService;
 
-    @PostMapping("jira")
-    public ResponseEntity<Map<String, Object>> callbackJira(
+    @PostMapping({"jira", "confluence"})
+    public ResponseEntity<Map<String, Object>> callback(
             final @RequestHeader Map<String, String> headers,
             final @RequestBody Callback callback
     ) throws Exception {
-        JiraContext jiraContext = (JiraContext) SecurityUtils.getCurrentAppContext();
-
-
         String authorizationHeader = Optional.ofNullable(headers.get(settingsManager.getSecurityHeader()))
                         .orElse(headers.get(settingsManager.getSecurityHeader().toLowerCase()));
 
@@ -62,7 +57,7 @@ public class CallbackController {
                     .body(Map.of("message", "Access denied: " + e.getMessage()));
         }
 
-        callbackService.processCallback(verifiedCallback, jiraContext.getAttachmentId());
+        callbackService.processCallback(verifiedCallback, null);
 
         return ResponseEntity.ok(Map.of("error", 0));
     }

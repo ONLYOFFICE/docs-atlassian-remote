@@ -18,7 +18,10 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
+import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
+import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
@@ -57,14 +60,28 @@ public class EditorController {
     private long editorSessionTimeUntilExpiration;
 
 
-    @GetMapping(path = "/jira")
-    public String editorJiraPage(
+    @GetMapping({"jira", "confluence"})
+    public String editorPage(
             final @RequestParam Mode mode,
             final Model model
     ) throws ParseException {
-        JiraContext jiraContext = (JiraContext) SecurityUtils.getCurrentAppContext();
+        Context context = SecurityUtils.getCurrentAppContext();
+        Product product = context.getProduct();
 
-        Config config = configService.createConfig(jiraContext.getAttachmentId(), mode, Type.DESKTOP);
+        Config config = switch (product) {
+            case JIRA -> {
+                JiraContext jiraContext = (JiraContext) context;
+
+                yield configService.createConfig(jiraContext.getAttachmentId(), mode, Type.DESKTOP);
+            }
+            case CONFLUENCE -> {
+                ConfluenceContext confluenceContext = (ConfluenceContext) context;
+
+                yield configService.createConfig(confluenceContext.getAttachmentId(), mode, Type.DESKTOP);
+            }
+            default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        };
+
         model.addAttribute("config", config);
         model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
 
@@ -74,11 +91,24 @@ public class EditorController {
         return "editor";
     }
 
-    @GetMapping(path = "/jira", params = "format=json")
-    public ResponseEntity<EditorResponse> editorJiraData(final @RequestParam Mode mode) throws ParseException {
-        JiraContext jiraContext = (JiraContext) SecurityUtils.getCurrentAppContext();
+    @GetMapping(path = {"jira", "confluence"}, params = "format=json")
+    public ResponseEntity<EditorResponse> editorData(final @RequestParam Mode mode) throws ParseException {
+        Context context = SecurityUtils.getCurrentAppContext();
+        Product product = context.getProduct();
 
-        Config config = configService.createConfig(jiraContext.getAttachmentId(), mode, Type.DESKTOP);
+        Config config = switch (product) {
+            case JIRA -> {
+                JiraContext jiraContext = (JiraContext) context;
+
+                yield configService.createConfig(jiraContext.getAttachmentId(), mode, Type.DESKTOP);
+            }
+            case CONFLUENCE -> {
+                ConfluenceContext confluenceContext = (ConfluenceContext) context;
+
+                yield configService.createConfig(confluenceContext.getAttachmentId(), mode, Type.DESKTOP);
+            }
+            default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        };
 
         return ResponseEntity.ok(new EditorResponse(config, getSessionExpires()));
     }
