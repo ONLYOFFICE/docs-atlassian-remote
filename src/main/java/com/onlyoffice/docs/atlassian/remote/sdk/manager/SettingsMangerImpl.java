@@ -29,7 +29,9 @@ import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
 import com.onlyoffice.manager.settings.DefaultSettingsManager;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -68,17 +70,25 @@ public class SettingsMangerImpl extends DefaultSettingsManager {
                }
             }
 
-            JiraSettings jiraSettings = jiraClient.getSettings(
-                    SETTINGS_KEY,
-                    xForgeTokenRepository.getXForgeToken(
-                            SecurityUtils.getCurrentXForgeSystemTokenId(),
-                            XForgeTokenType.SYSTEM
-                    )
-            );
+            try {
+                JiraSettings jiraSettings = jiraClient.getSettings(
+                        SETTINGS_KEY,
+                        xForgeTokenRepository.getXForgeToken(
+                                SecurityUtils.getCurrentXForgeSystemTokenId(),
+                                XForgeTokenType.SYSTEM
+                        )
+                );
 
-            return Optional.ofNullable(jiraSettings.getValue().get(name))
-                    .map(String::valueOf)
-                    .orElse(null);
+                return Optional.ofNullable(jiraSettings.getValue().get(name))
+                        .map(String::valueOf)
+                        .orElse(null);
+            } catch (WebClientResponseException e) {
+                if (HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
+                    return null;
+                } else {
+                    throw e;
+                }
+            }
         }
 
         return settings.get(name);
