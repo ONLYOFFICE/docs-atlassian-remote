@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.onlyoffice.docs.atlassian.remote.aop.CurrentAccountId;
 import com.onlyoffice.docs.atlassian.remote.aop.CurrentFitContext;
 import com.onlyoffice.docs.atlassian.remote.aop.CurrentProduct;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.FitContext;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
@@ -77,7 +78,13 @@ public class RemoteAuthorizationController {
                     .issueId(request.getParentId())
                     .attachmentId(request.getEntityId())
                     .build();
-            default -> throw new UnsupportedOperationException();
+            case CONFLUENCE -> ConfluenceContext.builder()
+                    .product(product)
+                    .cloudId(fitContext.cloudId())
+                    .pageId(request.getParentId())
+                    .attachmentId(request.getEntityId())
+                    .build();
+            default ->  throw new UnsupportedOperationException("Unsupported product: " + product);
         };
 
         xForgeTokenRepository.saveXForgeToken(
