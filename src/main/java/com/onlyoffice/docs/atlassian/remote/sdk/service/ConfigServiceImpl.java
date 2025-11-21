@@ -18,9 +18,17 @@
 
 package com.onlyoffice.docs.atlassian.remote.sdk.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceLinks;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceOperation;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceUser;
 import com.onlyoffice.docs.atlassian.remote.client.jira.JiraClient;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraAttachment;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraPermission;
@@ -44,22 +52,28 @@ import com.onlyoffice.service.documenteditor.config.DefaultConfigService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 
 @Component
 public class ConfigServiceImpl extends DefaultConfigService {
     private final JiraClient jiraClient;
+    private final ConfluenceClient confluenceClient;
     private final XForgeTokenRepository xForgeTokenRepository;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ConfigServiceImpl(final DocumentManager documentManager,
                              final UrlManager urlManager,
                              final JwtManager jwtManager,
                              final SettingsManager settingsManager, final JiraClient jiraClient,
+                             final ConfluenceClient confluenceClient,
                              final XForgeTokenRepository xForgeTokenRepository) {
         super(documentManager, urlManager, jwtManager, settingsManager);
 
         this.xForgeTokenRepository = xForgeTokenRepository;
         this.jiraClient = jiraClient;
+        this.confluenceClient = confluenceClient;
     }
 
     @Override
@@ -70,7 +84,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
 
         switch (context.getProduct()) {
             case JIRA:
-                JiraUser user = jiraClient.getUser(
+                JiraUser jiraUser = jiraClient.getUser(
                         context.getCloudId().toString(),
                         xForgeTokenRepository.getXForgeToken(
                                 SecurityUtils.getCurrentXForgeUserTokenId(),
@@ -78,7 +92,19 @@ public class ConfigServiceImpl extends DefaultConfigService {
                         )
                 );
 
-                editorConfig.setLang(user.getLocale());
+                editorConfig.setLang(jiraUser.getLocale());
+
+                return editorConfig;
+            case CONFLUENCE:
+                ConfluenceUser confluenceUser = confluenceClient.getUser(
+                        context.getCloudId().toString(),
+                        xForgeTokenRepository.getXForgeToken(
+                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                XForgeTokenType.USER
+                        )
+                );
+
+                editorConfig.setLang(confluenceUser.getLocale());
 
                 return editorConfig;
             default:
@@ -134,6 +160,34 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 return Permissions.builder()
                         .edit(createAttachments.isHavePermission() && deleteAttachments.isHavePermission())
                         .build();
+            case CONFLUENCE:
+                ConfluenceContext confluenceContext = (ConfluenceContext) context;
+
+                ConfluenceAttachment confluenceAttachment = confluenceClient.getAttachment(
+                        confluenceContext.getCloudId(),
+                        fileId,
+                        xForgeTokenRepository.getXForgeToken(
+                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                XForgeTokenType.USER
+                        )
+                );
+
+                Map<String, Object> operations = confluenceAttachment.getOperations();
+                boolean canEdit = false;
+                if (!operations.isEmpty()) {
+                    List<ConfluenceOperation> permittedOperations = objectMapper.convertValue(
+                            operations.get("results"),
+                            new TypeReference<List<ConfluenceOperation>>() { }
+                    );
+
+                    canEdit = permittedOperations.stream()
+                            .anyMatch(operation -> "update".equals(operation.getOperation())
+                                    && "attachment".equals(operation.getTargetType()));
+                }
+
+                return Permissions.builder()
+                        .edit(canEdit)
+                        .build();
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
@@ -158,7 +212,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
 
         switch (context.getProduct()) {
             case JIRA:
-                JiraUser user = jiraClient.getUser(
+                JiraUser jiraUser = jiraClient.getUser(
                         context.getCloudId().toString(),
                         xForgeTokenRepository.getXForgeToken(
                                 SecurityUtils.getCurrentXForgeUserTokenId(),
@@ -167,9 +221,29 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 );
 
                 return User.builder()
-                        .id(user.getAccountId())
-                        .name(user.getDisplayName())
-                        .image(user.getAvatarUrls().get("24x24"))
+                        .id(jiraUser.getAccountId())
+                        .name(jiraUser.getDisplayName())
+                        .image(jiraUser.getAvatarUrls().get("24x24"))
+                        .build();
+            case CONFLUENCE:
+                ConfluenceUser confluenceUser = confluenceClient.getUser(
+                        context.getCloudId().toString(),
+                        xForgeTokenRepository.getXForgeToken(
+                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                XForgeTokenType.USER
+                        )
+                );
+
+                ConfluenceLinks links = confluenceUser.get_links();
+                String baseUrl = links.getBase();
+                if (baseUrl.endsWith(links.getContext())) {
+                    baseUrl = baseUrl.substring(0, baseUrl.length() - links.getContext().length());
+                }
+
+                return User.builder()
+                        .id(confluenceUser.getAccountId())
+                        .name(confluenceUser.getDisplayName())
+                        .image(baseUrl + confluenceUser.getProfilePicture().getPath())
                         .build();
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
