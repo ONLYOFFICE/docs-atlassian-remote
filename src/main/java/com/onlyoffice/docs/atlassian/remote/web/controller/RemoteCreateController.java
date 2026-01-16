@@ -22,6 +22,8 @@ import com.onlyoffice.docs.atlassian.remote.aop.CurrentFitContext;
 import com.onlyoffice.docs.atlassian.remote.aop.CurrentProduct;
 import com.onlyoffice.docs.atlassian.remote.api.FitContext;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
 import com.onlyoffice.docs.atlassian.remote.client.jira.JiraClient;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraAttachment;
 import com.onlyoffice.docs.atlassian.remote.web.dto.create.CreateRequest;
@@ -53,6 +55,7 @@ import java.util.Locale;
 public class RemoteCreateController {
     private final DocumentManager documentManager;
     private final JiraClient jiraClient;
+    private final ConfluenceClient confluenceClient;
 
     @PostMapping
     public ResponseEntity<CreateResponse> createAttachment(
@@ -61,7 +64,7 @@ public class RemoteCreateController {
             final @RequestHeader("x-forge-oauth-user") String xForgeUserToken,
             final @Valid @RequestBody CreateRequest request
     ) {
-        String issueId = request.getParentId();
+        String parentId = request.getParentId();
         String title = request.getTitle();
         DocumentType documentType = request.getDocumentType();
         String locale = request.getLocale();
@@ -73,25 +76,41 @@ public class RemoteCreateController {
                 Locale.forLanguageTag(locale)
         );
 
-        switch (product) {
-            case JIRA:
+        return switch (product) {
+            case JIRA -> {
                 List<JiraAttachment> newAttachments = jiraClient.createAttachment(
                         fitContext.cloudId(),
-                        issueId,
+                        parentId,
                         toDataBufferFlux(newBlankFile),
                         title + "." + fileExtension,
                         xForgeUserToken
                 );
 
-                return ResponseEntity.ok(
+                yield ResponseEntity.ok(
                         new CreateResponse(
                                 String.valueOf(newAttachments.getFirst().getId()),
                                 newAttachments.getFirst().getFilename()
                         )
                 );
-            default:
-                throw new UnsupportedOperationException("Unsupported product: " + product);
-        }
+            }
+            case CONFLUENCE -> {
+                List<ConfluenceAttachment> newAttachments = confluenceClient.createAttachment(
+                        fitContext.cloudId(),
+                        parentId,
+                        toDataBufferFlux(newBlankFile),
+                        title + "." + fileExtension,
+                        xForgeUserToken
+                );
+
+                yield ResponseEntity.ok(
+                        new CreateResponse(
+                                String.valueOf(newAttachments.getFirst().getId()),
+                                newAttachments.getFirst().getTitle()
+                        )
+                );
+            }
+            default -> throw new UnsupportedOperationException("Unsupported product: " + product);
+        };
     }
 
     private static Flux<DataBuffer> toDataBufferFlux(final InputStream inputStream) {

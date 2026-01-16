@@ -20,6 +20,7 @@ package com.onlyoffice.docs.atlassian.remote.client.confluence;
 
 import com.onlyoffice.docs.atlassian.remote.aop.RequestCacheable;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceResults;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceSettings;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceUser;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -84,6 +86,31 @@ public class ConfluenceClient {
                 .block();
     }
 
+    public List<ConfluenceAttachment> createAttachment(final UUID cloudId, final String pageId,
+                                                       final Flux<DataBuffer> file, final String fileName,
+                                                       final String token) {
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.asyncPart("file", file, DataBuffer.class)
+                .filename(fileName)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM);
+
+        return atlassianWebClient.post()
+                .uri(
+                        "/ex/confluence/{cloudId}/wiki/rest/api/content/{pageId}/child/attachment",
+                        cloudId,
+                        pageId
+                )
+                .headers(httpHeaders -> {
+                    httpHeaders.setBearerAuth(token);
+                    httpHeaders.set("X-Atlassian-Token", "no-check");
+                })
+                .body(BodyInserters.fromMultipartData(builder.build()))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<ConfluenceResults<ConfluenceAttachment>>() { })
+                .block()
+                .getResults();
+    }
+
     public ConfluenceAttachment updateAttachmentData(final UUID cloudId, final String pageId, final String attachmentId,
                                                      final Flux<DataBuffer> file, final String token) {
         MultipartBodyBuilder builder = new MultipartBodyBuilder();
@@ -92,7 +119,7 @@ public class ConfluenceClient {
 
         return atlassianWebClient.post()
                 .uri(
-                        "/ex/confluence/{cloudId}//wiki/rest/api/content/{pageId}/child/attachment/{attachmentId}/data",
+                        "/ex/confluence/{cloudId}/wiki/rest/api/content/{pageId}/child/attachment/{attachmentId}/data",
                         cloudId,
                         pageId,
                         attachmentId
