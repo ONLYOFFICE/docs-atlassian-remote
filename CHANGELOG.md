@@ -1,7 +1,7 @@
 # Changelog
 
 
-##
+## 1.0.0
 ## Added
 - Authorization endpoint for issuing JWT tokens (`/api/v1/remote/authorization`)
 - Editor page for viewing and editing documents in Jira (`/editor/jira`)
