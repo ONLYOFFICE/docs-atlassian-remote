@@ -10,7 +10,7 @@
     <suppress files=".*java" checks="JavadocType"/>
     <suppress files=".*java" checks="JavadocMethod"/>
 
-    <suppress files="DocsJiraRemoteApplication.java" checks="HideUtilityClassConstructor"/>
+    <suppress files="DocsAtlassianRemoteApplication.java" checks="HideUtilityClassConstructor"/>
 
     <suppress files=".*Test.java" checks="HideUtilityClassConstructor"/>
     <suppress files=".*Test.java" checks="MethodName"/>
