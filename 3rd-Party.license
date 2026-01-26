@@ -1,0 +1,86 @@
+ONLYOFFICE Docs integration remote service with Atlassian uses code from the following 3rd party projects:
+
+
+org.springframework.boot.spring-boot-starter-parent - Parent pom providing dependency and plugin management for applications built with Maven. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         org.springframework.boot.spring-boot-starter-parent.license
+
+org.springframework.boot.spring-boot-starter-oauth2-resource-server - Starter for using Spring Data JPA with Hibernate. (https://www.apache.org/licenses/LICENSE-2.0.txt)
+License:              Apache License 2.0
+License File:         org.springframework.boot.spring-boot-starter-oauth2-resource-server.license
+
+org.springframework.boot.spring-boot-starter-thymeleaf - Starter for building web applications with Thymeleaf. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         org.springframework.boot.spring-boot-starter-thymeleaf.license
+
+org.springframework.boot.spring-boot-starter-web - Starter for building web applications, including RESTful applications, using Spring MVC. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         org.springframework.boot.spring-boot-starter-web.license
+
+org.springframework.boot.spring-boot-starter-validation - Starter for using Java Bean Validation with Hibernate Validator. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         org.springframework.boot.spring-boot-starter-validation.license
+
+org.springframework.spring-webflux - Support for reactive web applications. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         org.springframework.spring-webflux.license
+
+io.projectreactor.netty.reactor-netty-http - Reactor Netty HTTP server and client. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         io.projectreactor.netty.reactor-netty-http.license
+
+org.springframework.boot.spring-boot-starter-data-redis - Starter for using Spring Data Redis. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         org.springframework.boot.spring-boot-starter-data-redis.license
+
+org.springframework.boot.spring-boot-starter-data-jpa - Starter for using Spring Data JPA with Hibernate. ((https://www.apache.org/licenses/LICENSE-2.0))
+License:              Apache License 2.0
+License File:         org.springframework.boot.spring-boot-starter-data-jpa.license
+
+org.springframework.boot.spring-boot-starter-aop - Starter for aspect-oriented programming with Spring AOP and AspectJ.
+License:              Apache License 2.0
+License File:         org.springframework.boot.spring-boot-starter-aop.license
+
+org.thymeleaf.extras.thymeleaf-extras-springsecurity6 - Thymeleaf extras for Spring Security 6. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         org.thymeleaf.extras.thymeleaf-extras-springsecurity6.license
+
+org.projectlombok.lombok - Java library that automatically plugs into your editor and build tools, spicing up your Java. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         org.projectlombok.lombok.license
+
+com.onlyoffice.docs-integration-sdk - ONLYOFFICE Docs Integration SDK. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         com.onlyoffice.docs-integration-sdk.license
+
+org.postgresql.postgresql - PostgreSQL JDBC Driver. (https://jdbc.postgresql.org/license/)
+License:              BSD-2-Clause
+License File:         org.postgresql.postgresql.license
+
+org.springframework.boot.spring-boot-starter-test - Starter for testing Spring Boot applications with libraries including JUnit, Hamcrest, and Mockito. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         org.springframework.boot.spring-boot-starter-test.license
+
+io.projectreactor.reactor-test - Reactor Test utilities. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         io.projectreactor.reactor-test.license
+
+org.springframework.security.spring-security-test - Spring Security testing support. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         org.springframework.security.spring-security-test.license
+
+org.springframework.boot.spring-boot-testcontainers - Spring Boot Testcontainers support. (https://www.apache.org/licenses/LICENSE-2.0)
+License:              Apache License 2.0
+License File:         org.springframework.boot.spring-boot-testcontainers.license
+
+org.testcontainers.junit-jupiter - JUnit Jupiter extension for Testcontainers. (http://opensource.org/licenses/MIT)
+License:              MIT License
+License File:         org.testcontainers.junit-jupiter.license
+
+org.testcontainers.postgresql - PostgreSQL module for Testcontainers. (http://opensource.org/licenses/MIT)
+License:              MIT License
+License File:         org.testcontainers.postgresql.license
+
+com.redis.testcontainers-redis - Redis module for Testcontainers. (http://opensource.org/licenses/MIT)
+License:              MIT License
+License File:         com.redis.testcontainers-redis.license

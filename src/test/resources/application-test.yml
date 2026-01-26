@@ -1,0 +1,39 @@
+app:
+  base-url: http://localhost:8080/
+  security:
+    secret: f66eb0b035fddd3752220e4affc7d01f
+    ttl:
+      default: 5
+      callback: 240
+  editor-session:
+    time-until-expiration: 15
+
+forge:
+  products:
+    JIRA:
+      appId: ari:cloud:ecosystem::app/d818e8a8-a333-4782-9f97-fa753b4a6a37
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://forge.cdn.prod.atlassian-dev.net/.well-known/jwks.json
+          issuer-uri: forge/invocation-token
+          audiences:
+            - ${forge.products.JIRA.appId}
+          principal-claim-name: principal
+          principal-attribute: principal
+          jwk-ttl-in-days: 20
+  jpa:
+    hibernate:
+      ddl-auto: create
+  datasource:
+    hikari:
+      schema: public
+      connection-init-sql: CREATE SCHEMA IF NOT EXISTS public
+      connection-timeout: 10000
+
+atlassian:
+  api:
+    base-url: https://api.atlassian.com

@@ -1,0 +1,42 @@
+app:
+  base-url: ${APP_BASE_URL}
+  security:
+    secret: ${APP_SECRET_KEY}
+    ttl:
+      default: 5
+      callback: 240
+  editor-session:
+    time-until-expiration: 15
+
+forge:
+  products:
+    JIRA:
+      appId: ari:cloud:ecosystem::app/${FORGE_JIRA_APP_ID}
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://forge.cdn.prod.atlassian-dev.net/.well-known/jwks.json
+          issuer-uri: forge/invocation-token
+          audiences:
+            - ${forge.products.JIRA.appId}
+          principal-claim-name: principal
+          principal-attribute: principal
+          jwk-ttl-in-days: 20
+  jpa:
+    hibernate:
+      ddl-auto: update
+  datasource:
+    url: jdbc:postgresql://localhost:5432/onlyoffice_docs_atlassian_remote
+    username: onlyoffice
+    password: onlyoffice
+    hikari:
+      schema: public
+      connection-init-sql: CREATE SCHEMA IF NOT EXISTS public
+      connection-timeout: 10000
+
+atlassian:
+  api:
+    base-url: https://api.atlassian.com
