@@ -15,7 +15,7 @@ on:
         required: false
 
 env:
-  DOCKER_HUB_IMAGE_NAME: jira-cloud
+  DOCKER_HUB_IMAGE_NAME: docs-atlassian-remote
   DOCKER_HUB_NAMESPACE: onlyoffice
 
 jobs:
@@ -60,7 +60,7 @@ jobs:
           file: Dockerfile
           push: true
           platforms: linux/amd64
-          tags: ${{ env.DOCKER_HUB_NAMESPACE }}/jira-cloud:${{ github.event.inputs.tag || env.RC_TAG }}
+          tags: ${{ env.DOCKER_HUB_NAMESPACE }}/docs-atlassian-remote:${{ github.event.inputs.tag || env.RC_TAG }}
 
   update:
     name: Update connector
