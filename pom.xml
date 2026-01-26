@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.onlyoffice</groupId>
     <artifactId>docs-atlassian-remote</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
     <name>docs-atlassian-remote</name>
     <description>ONLYOFFICE Docs integration remote service with Atlassian</description>
     <url>https://github.com/ONLYOFFICE/docs-atlassian-remote</url>
@@ -96,8 +96,14 @@
         <dependency>
             <groupId>com.onlyoffice</groupId>
             <artifactId>docs-integration-sdk</artifactId>
-            <version>1.6.0</version>
+            <version>1.7.1</version>
         </dependency>
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>9.0</version>
+        </dependency>
+
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
