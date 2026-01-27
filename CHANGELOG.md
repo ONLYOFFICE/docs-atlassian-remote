@@ -1,5 +1,8 @@
 # Changelog
 
+##
+## Changed
+- fixed bug link generation when the document server URL contains a context path
 
 ## 1.0.0
 ## Added
