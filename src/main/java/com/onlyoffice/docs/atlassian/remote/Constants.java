@@ -16,12 +16,11 @@
  *
  */
 
-package com.onlyoffice.docs.atlassian.remote.api;
+package com.onlyoffice.docs.atlassian.remote;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.UUID;
+public final class Constants {
+    private Constants() { }
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public record FitContext(UUID cloudId) {
+    public static final String SETTINGS_KEY = "onlyoffice-docs.settings";
 }

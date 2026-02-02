@@ -41,12 +41,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.onlyoffice.docs.atlassian.remote.Constants.SETTINGS_KEY;
+
 
 @AllArgsConstructor
 @Component
 public class SettingsMangerImpl extends DefaultSettingsManager {
-    private static final String SETTINGS_KEY = "onlyoffice-docs.settings";
-
     private final JiraClient jiraClient;
     private final ConfluenceClient confluenceClient;
     private final XForgeTokenRepository xForgeTokenRepository;
