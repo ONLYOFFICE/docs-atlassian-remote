@@ -22,7 +22,9 @@ document.addEventListener("DOMContentLoaded", function() {
             events.emit("DOCS_API_UNDEFINED");
             return;
         } else {
-            events.emit("PAGE_IS_LOADED");
+            events.emit("PAGE_IS_LOADED", {
+                config
+            });
         }
 
         let editor;
