@@ -32,13 +32,16 @@ import java.util.UUID;
 public class Context {
     private Product product;
     private UUID cloudId;
+    private UUID environmentId;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Context(
             final @NonNull @JsonProperty("product") Product product,
-            final @NonNull @JsonProperty("cloudId") UUID cloudId
+            final @NonNull @JsonProperty("cloudId") UUID cloudId,
+            final @NonNull @JsonProperty("environmentId") UUID environmentId
     ) {
         this.product = product;
         this.cloudId = cloudId;
+        this.environmentId = environmentId;
     }
 }

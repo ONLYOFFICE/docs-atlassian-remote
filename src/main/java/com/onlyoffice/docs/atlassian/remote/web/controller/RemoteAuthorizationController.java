@@ -75,12 +75,14 @@ public class RemoteAuthorizationController {
             case JIRA -> JiraContext.builder()
                     .product(product)
                     .cloudId(fitContext.cloudId())
+                    .environmentId(fitContext.environmentId())
                     .issueId(request.getParentId())
                     .attachmentId(request.getEntityId())
                     .build();
             case CONFLUENCE -> ConfluenceContext.builder()
                     .product(product)
                     .cloudId(fitContext.cloudId())
+                    .environmentId(fitContext.environmentId())
                     .pageId(request.getParentId())
                     .attachmentId(request.getEntityId())
                     .build();

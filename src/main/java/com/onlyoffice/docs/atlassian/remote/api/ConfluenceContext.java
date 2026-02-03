@@ -41,10 +41,11 @@ public class ConfluenceContext extends Context {
     public ConfluenceContext(
             final @NonNull @JsonProperty("product") Product product,
             final @NonNull @JsonProperty("cloudId") UUID cloudId,
+            final @NonNull @JsonProperty("environmentId") UUID environmentId,
             final @NonNull @JsonProperty("pageId") String pageId,
             final @NonNull @JsonProperty("attachmentId") String attachmentId
     ) {
-        super(product, cloudId);
+        super(product, cloudId, environmentId);
 
         this.pageId = pageId;
         this.attachmentId = attachmentId;

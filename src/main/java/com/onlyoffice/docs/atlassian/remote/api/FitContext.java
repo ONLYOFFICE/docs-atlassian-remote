@@ -23,5 +23,5 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record FitContext(UUID cloudId) {
+public record FitContext(UUID cloudId, UUID environmentId) {
 }
