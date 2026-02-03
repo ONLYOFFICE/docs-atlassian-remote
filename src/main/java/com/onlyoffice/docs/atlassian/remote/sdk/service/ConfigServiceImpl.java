@@ -195,13 +195,23 @@ public class ConfigServiceImpl extends DefaultConfigService {
 
     @Override
     public Customization getCustomization(final String fileId) {
+        Context context = SecurityUtils.getCurrentAppContext();
         Customization customization = super.getCustomization(fileId);
 
-        customization.setClose(
-                Close.builder()
-                        .visible(true)
-                        .build()
-        );
+        switch (context.getProduct()) {
+            case JIRA:
+                customization.setClose(
+                        Close.builder()
+                                .visible(true)
+                                .build()
+                );
+                break;
+            case CONFLUENCE:
+                customization.getGoback().setRequestClose(true);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        }
 
         return customization;
     }

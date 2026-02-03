@@ -20,20 +20,31 @@ package com.onlyoffice.docs.atlassian.remote.sdk.manager;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
+import com.onlyoffice.docs.atlassian.remote.api.Product;
+import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluencePage;
+import com.onlyoffice.docs.atlassian.remote.configuration.ForgeProperties;
 import com.onlyoffice.docs.atlassian.remote.security.RemoteAppJwtService;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
+import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
 import com.onlyoffice.manager.settings.SettingsManager;
 import com.onlyoffice.manager.url.DefaultUrlManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Map;
 
 
 @Component
 public class UrlManagerImpl extends DefaultUrlManager {
+    private final ConfluenceClient confluenceClient;
+    private final XForgeTokenRepository xForgeTokenRepository;
     private final RemoteAppJwtService remoteAppJwtService;
+    private final ForgeProperties forgeProperties;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -44,10 +55,18 @@ public class UrlManagerImpl extends DefaultUrlManager {
     @Value("${app.security.ttl.callback}")
     private long ttlCallback;
 
-    public UrlManagerImpl(final SettingsManager settingsManager, final RemoteAppJwtService remoteAppJwtService) {
+    public UrlManagerImpl(final SettingsManager settingsManager,
+                          final ConfluenceClient confluenceClient,
+                          final XForgeTokenRepository xForgeTokenRepository,
+                          final RemoteAppJwtService remoteAppJwtService,
+                          final ForgeProperties forgeProperties
+    ) {
         super(settingsManager);
 
+        this.xForgeTokenRepository = xForgeTokenRepository;
+        this.confluenceClient = confluenceClient;
         this.remoteAppJwtService = remoteAppJwtService;
+        this.forgeProperties = forgeProperties;
     }
 
     @Override
@@ -78,5 +97,41 @@ public class UrlManagerImpl extends DefaultUrlManager {
         ).getTokenValue();
 
         return baseUrl + path + "?token=" + token;
+    }
+
+    @Override
+    public String getGobackUrl(final String fileId) {
+        Context context = SecurityUtils.getCurrentAppContext();
+        Product product = context.getProduct();
+
+        switch (product) {
+            case JIRA -> {
+                return null;
+            }
+            case CONFLUENCE -> {
+                ConfluenceContext confluenceContext = (ConfluenceContext) context;
+
+                ConfluencePage page = confluenceClient.getPage(
+                        confluenceContext.getCloudId(),
+                        confluenceContext.getPageId(),
+                        xForgeTokenRepository.getXForgeToken(
+                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                XForgeTokenType.USER
+                        )
+                );
+
+                return UriComponentsBuilder
+                        .fromUriString(page.get_links().getBase())
+                        .path(page.get_links().getWebui().replaceAll("(/spaces/~[^/]+).*", "$1"))
+                        .path("/apps/{appId}/{environmentId}/onlyoffice-docs")
+                        .queryParam("parentId", confluenceContext.getPageId())
+                        .buildAndExpand(
+                                forgeProperties.getAppIdByProductWithoutPrefix(product),
+                                confluenceContext.getEnvironmentId()
+                        )
+                        .toUriString();
+            }
+            default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        }
     }
 }

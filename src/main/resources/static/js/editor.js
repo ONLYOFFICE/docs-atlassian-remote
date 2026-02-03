@@ -119,8 +119,10 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         }
 
-        const onRequestClose = () => {
-           events.emit("REQUEST_CLOSE");
+        const onRequestClose = (event) => {
+            events.emit("REQUEST_CLOSE", {
+                url: config.editorConfig.customization.goback.url
+            });
         }
 
         const onRequestUsers = function(event) {

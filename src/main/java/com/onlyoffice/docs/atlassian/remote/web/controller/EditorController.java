@@ -25,6 +25,7 @@ import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluencePage;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceSettings;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceUser;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
@@ -87,7 +88,11 @@ public class EditorController {
             case CONFLUENCE -> {
                 ConfluenceContext confluenceContext = (ConfluenceContext) context;
 
-                preloadConfluenceResources(confluenceContext.getCloudId(), confluenceContext.getAttachmentId());
+                preloadConfluenceResources(
+                        confluenceContext.getCloudId(),
+                        confluenceContext.getPageId(),
+                        confluenceContext.getAttachmentId()
+                );
 
                 yield configService.createConfig(confluenceContext.getAttachmentId(), mode, Type.DESKTOP);
             }
@@ -117,7 +122,11 @@ public class EditorController {
             case CONFLUENCE -> {
                 ConfluenceContext confluenceContext = (ConfluenceContext) context;
 
-                preloadConfluenceResources(confluenceContext.getCloudId(), confluenceContext.getAttachmentId());
+                preloadConfluenceResources(
+                        confluenceContext.getCloudId(),
+                        confluenceContext.getPageId(),
+                        confluenceContext.getAttachmentId()
+                );
 
                 yield configService.createConfig(confluenceContext.getAttachmentId(), mode, Type.DESKTOP);
             }
@@ -146,7 +155,7 @@ public class EditorController {
         return minInstant.toEpochMilli();
     }
 
-    private void preloadConfluenceResources(final UUID cloudId, final String attachmentId) {
+    private void preloadConfluenceResources(final UUID cloudId, final String pageId, final String attachmentId) {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
 
         String xForgeUserToken = xForgeTokenRepository.getXForgeToken(
@@ -158,11 +167,20 @@ public class EditorController {
                 XForgeTokenType.SYSTEM
         );
 
+        confluenceClient.getPage(cloudId, pageId, xForgeUserToken);
+
         CompletableFuture<ConfluenceUser> confluenceUser = runWithRequestContext(
                 requestAttributes,
                 () ->
                         confluenceClient.getUser(cloudId.toString(), xForgeUserToken)
         );
+
+        CompletableFuture<ConfluencePage> confluencePage = runWithRequestContext(
+                requestAttributes,
+                () ->
+                        confluenceClient.getPage(cloudId, pageId, xForgeUserToken)
+        );
+
 
         CompletableFuture<ConfluenceAttachment> confluenceAttachment = runWithRequestContext(
                 requestAttributes,
@@ -183,7 +201,7 @@ public class EditorController {
                         )
         );
 
-        CompletableFuture.allOf(confluenceUser, confluenceAttachment, confluenceSettings).join();
+        CompletableFuture.allOf(confluenceUser, confluencePage, confluenceAttachment, confluenceSettings).join();
     }
 
     private <T> CompletableFuture<T> runWithRequestContext(
