@@ -18,15 +18,13 @@
 
 package com.onlyoffice.docs.atlassian.remote.client.confluence.dto;
 
-import lombok.Builder;
 import lombok.Data;
 
 
-@Builder
 @Data
-public class ConfluenceLinks {
-    private String self;
-    private String base;
-    private String context;
-    private String webui;
+public class ConfluencePage {
+    private String id;
+    private String title;
+    private String spaceId;
+    private ConfluenceLinks _links;
 }

@@ -20,6 +20,7 @@ package com.onlyoffice.docs.atlassian.remote.client.confluence;
 
 import com.onlyoffice.docs.atlassian.remote.aop.RequestCacheable;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluencePage;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceResults;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceSettings;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceUser;
@@ -54,6 +55,22 @@ public class ConfluenceClient {
                 })
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<ConfluenceUser>() { })
+                .block();
+    }
+
+    @RequestCacheable
+    public ConfluencePage getPage(final UUID cloudId, final String pageId, final String token) {
+        return atlassianWebClient.get()
+                .uri(
+                        "/ex/confluence/{cloudId}/wiki/api/v2/pages/{pageId}",
+                        cloudId,
+                        pageId
+                )
+                .headers(httpHeaders -> {
+                    httpHeaders.setBearerAuth(token);
+                })
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<ConfluencePage>() { })
                 .block();
     }
 
