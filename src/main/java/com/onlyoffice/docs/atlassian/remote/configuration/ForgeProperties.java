@@ -28,6 +28,8 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static com.onlyoffice.docs.atlassian.remote.Constants.APP_ID_PREFIX;
+
 
 @Component
 @ConfigurationProperties(prefix = "forge")
@@ -47,6 +49,16 @@ public class ForgeProperties {
                 .map(Map.Entry::getKey)
                 .findFirst()
                 .orElse(null);
+    }
+
+    public String getAppIdByProductWithoutPrefix(final Product product) {
+        String appId = getAppIdByProduct(product);
+
+        return appId.substring(APP_ID_PREFIX.length());
+    }
+
+    public String getAppIdByProduct(final Product product) {
+        return products.get(product).getAppId();
     }
 
     @Setter
