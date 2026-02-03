@@ -18,16 +18,12 @@
 
 package com.onlyoffice.docs.atlassian.remote.client.confluence.dto;
 
-import lombok.Builder;
 import lombok.Data;
 
-import java.util.Map;
 
-@Builder
 @Data
-public class ConfluenceAttachment {
-    private String id;
-    private String title;
-    private Map<String, Object> operations;
-    private ConfluenceAttachmentVersion version;
+public class ConfluenceAttachmentVersion {
+    private String authorId;
+    private String createdAt;
+    private Integer number;
 }

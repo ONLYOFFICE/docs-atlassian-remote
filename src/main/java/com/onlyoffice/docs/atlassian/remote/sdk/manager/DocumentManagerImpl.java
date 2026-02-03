@@ -32,6 +32,8 @@ import com.onlyoffice.manager.document.DefaultDocumentManager;
 import com.onlyoffice.manager.settings.SettingsManager;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+
 
 @Component
 public class DocumentManagerImpl extends DefaultDocumentManager {
@@ -53,12 +55,27 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
     public String getDocumentKey(final String fileId, final boolean embedded) {
         Context context = SecurityUtils.getCurrentAppContext();
 
-        return String.format(
-                "%s_%s_%s",
-                context.getProduct(),
-                context.getCloudId(),
-                fileId
-        );
+        switch (context.getProduct()) {
+            case JIRA:
+                return String.format(
+                        "%s_%s_%s",
+                        context.getProduct(),
+                        context.getCloudId(),
+                        fileId
+                );
+            case CONFLUENCE:
+                ConfluenceAttachment confluenceAttachment = getConfluenceAttachment(fileId);
+
+                return String.format(
+                        "%s_%s_%s_%s",
+                        context.getProduct(),
+                        context.getCloudId(),
+                        fileId,
+                        Instant.parse(confluenceAttachment.getVersion().getCreatedAt()).toEpochMilli()
+                );
+            default:
+                throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        }
     }
 
     @Override
