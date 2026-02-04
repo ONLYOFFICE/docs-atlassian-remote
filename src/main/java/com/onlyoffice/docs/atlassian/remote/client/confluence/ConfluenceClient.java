@@ -90,12 +90,13 @@ public class ConfluenceClient {
                 .block();
     }
 
-    public ClientResponse getAttachmentData(final String cloudId, final String pageId, final String attachmentId,
+    public ClientResponse getAttachmentData(final String cloudId, final String parentId, final String attachmentId,
                                             final String token) {
         return atlassianWebClient.get()
-                .uri("/ex/confluence/{cloudId}/wiki/rest/api/content/{pageId}/child/attachment/{attachmentId}/download",
+                .uri("/ex/confluence/{cloudId}/wiki/rest/api/content/{parentId}"
+                                + "/child/attachment/{attachmentId}/download",
                         cloudId,
-                        pageId,
+                        parentId,
                         attachmentId
                 )
                 .headers(h -> h.setBearerAuth(token))
@@ -103,7 +104,7 @@ public class ConfluenceClient {
                 .block();
     }
 
-    public List<ConfluenceAttachment> createAttachment(final UUID cloudId, final String pageId,
+    public List<ConfluenceAttachment> createAttachment(final UUID cloudId, final String parentId,
                                                        final Flux<DataBuffer> file, final String fileName,
                                                        final String token) {
         MultipartBodyBuilder builder = new MultipartBodyBuilder();
@@ -113,9 +114,10 @@ public class ConfluenceClient {
 
         return atlassianWebClient.post()
                 .uri(
-                        "/ex/confluence/{cloudId}/wiki/rest/api/content/{pageId}/child/attachment",
+                        "/ex/confluence/{cloudId}/wiki/rest/api/content/{parentId}"
+                                + "/child/attachment",
                         cloudId,
-                        pageId
+                        parentId
                 )
                 .headers(httpHeaders -> {
                     httpHeaders.setBearerAuth(token);
@@ -128,17 +130,19 @@ public class ConfluenceClient {
                 .getResults();
     }
 
-    public ConfluenceAttachment updateAttachmentData(final UUID cloudId, final String pageId, final String attachmentId,
-                                                     final Flux<DataBuffer> file, final String token) {
+    public ConfluenceAttachment updateAttachmentData(final UUID cloudId, final String parentId,
+                                                     final String attachmentId, final Flux<DataBuffer> file,
+                                                     final String token) {
         MultipartBodyBuilder builder = new MultipartBodyBuilder();
         builder.asyncPart("file", file, DataBuffer.class)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM);
 
         return atlassianWebClient.post()
                 .uri(
-                        "/ex/confluence/{cloudId}/wiki/rest/api/content/{pageId}/child/attachment/{attachmentId}/data",
+                        "/ex/confluence/{cloudId}/wiki/rest/api/content/{parentId}"
+                                + "/child/attachment/{attachmentId}/data",
                         cloudId,
-                        pageId,
+                        parentId,
                         attachmentId
                 )
                 .headers(httpHeaders -> {

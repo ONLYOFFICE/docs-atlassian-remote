@@ -33,7 +33,7 @@ import java.util.UUID;
 @SuperBuilder
 public class ConfluenceContext extends Context {
     @NonNull
-    private String pageId;
+    private String parentId;
     @NonNull
     private String attachmentId;
 
@@ -42,12 +42,12 @@ public class ConfluenceContext extends Context {
             final @NonNull @JsonProperty("product") Product product,
             final @NonNull @JsonProperty("cloudId") UUID cloudId,
             final @NonNull @JsonProperty("environmentId") UUID environmentId,
-            final @NonNull @JsonProperty("pageId") String pageId,
+            final @NonNull @JsonProperty("parentId") String parentId,
             final @NonNull @JsonProperty("attachmentId") String attachmentId
     ) {
         super(product, cloudId, environmentId);
 
-        this.pageId = pageId;
+        this.parentId = parentId;
         this.attachmentId = attachmentId;
     }
 }

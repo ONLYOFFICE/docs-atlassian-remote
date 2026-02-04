@@ -90,7 +90,7 @@ public class EditorController {
 
                 preloadConfluenceResources(
                         confluenceContext.getCloudId(),
-                        confluenceContext.getPageId(),
+                        confluenceContext.getParentId(),
                         confluenceContext.getAttachmentId()
                 );
 
@@ -124,7 +124,7 @@ public class EditorController {
 
                 preloadConfluenceResources(
                         confluenceContext.getCloudId(),
-                        confluenceContext.getPageId(),
+                        confluenceContext.getParentId(),
                         confluenceContext.getAttachmentId()
                 );
 

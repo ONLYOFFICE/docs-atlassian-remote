@@ -107,7 +107,7 @@ public class CallbackServiceImpl extends DefaultCallbackService {
 
                 confluenceClient.updateAttachmentData(
                         confluenceContext.getCloudId(),
-                        confluenceContext.getPageId(),
+                        confluenceContext.getParentId(),
                         confluenceContext.getAttachmentId(),
                         newFile,
                         xForgeTokenRepository.getXForgeToken(

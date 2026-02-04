@@ -99,7 +99,7 @@ public class DownloadController {
 
                 yield confluenceClient.getAttachmentData(
                         confluenceContext.getCloudId().toString(),
-                        confluenceContext.getPageId(),
+                        confluenceContext.getParentId(),
                         confluenceContext.getAttachmentId(),
                         xForgeTokenRepository.getXForgeToken(
                                 SecurityUtils.getCurrentXForgeUserTokenId(),

@@ -83,7 +83,7 @@ public class RemoteAuthorizationController {
                     .product(product)
                     .cloudId(fitContext.cloudId())
                     .environmentId(fitContext.environmentId())
-                    .pageId(request.getParentId())
+                    .parentId(request.getParentId())
                     .attachmentId(request.getEntityId())
                     .build();
             default ->  throw new UnsupportedOperationException("Unsupported product: " + product);

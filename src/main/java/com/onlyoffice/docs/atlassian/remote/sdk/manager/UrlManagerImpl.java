@@ -113,7 +113,7 @@ public class UrlManagerImpl extends DefaultUrlManager {
 
                 ConfluencePage page = confluenceClient.getPage(
                         confluenceContext.getCloudId(),
-                        confluenceContext.getPageId(),
+                        confluenceContext.getParentId(),
                         xForgeTokenRepository.getXForgeToken(
                                 SecurityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
@@ -124,7 +124,7 @@ public class UrlManagerImpl extends DefaultUrlManager {
                         .fromUriString(page.get_links().getBase())
                         .path(page.get_links().getWebui().replaceAll("(/spaces/~[^/]+).*", "$1"))
                         .path("/apps/{appId}/{environmentId}/onlyoffice-docs")
-                        .queryParam("parentId", confluenceContext.getPageId())
+                        .queryParam("parentId", confluenceContext.getParentId())
                         .buildAndExpand(
                                 forgeProperties.getAppIdByProductWithoutPrefix(product),
                                 confluenceContext.getEnvironmentId()
