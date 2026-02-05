@@ -20,7 +20,7 @@ package com.onlyoffice.docs.atlassian.remote.client.confluence;
 
 import com.onlyoffice.docs.atlassian.remote.aop.RequestCacheable;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
-import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluencePage;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceContent;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceResults;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceSettings;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceUser;
@@ -59,18 +59,20 @@ public class ConfluenceClient {
     }
 
     @RequestCacheable
-    public ConfluencePage getPage(final UUID cloudId, final String pageId, final String token) {
+    public ConfluenceContent getContent(final UUID cloudId, final String contentType, final String id,
+                                        final String token) {
         return atlassianWebClient.get()
                 .uri(
-                        "/ex/confluence/{cloudId}/wiki/api/v2/pages/{pageId}",
+                        "/ex/confluence/{cloudId}/wiki/api/v2/{contentType}s/{id}",
                         cloudId,
-                        pageId
+                        contentType,
+                        id
                 )
                 .headers(httpHeaders -> {
                     httpHeaders.setBearerAuth(token);
                 })
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<ConfluencePage>() { })
+                .bodyToMono(new ParameterizedTypeReference<ConfluenceContent>() { })
                 .block();
     }
 

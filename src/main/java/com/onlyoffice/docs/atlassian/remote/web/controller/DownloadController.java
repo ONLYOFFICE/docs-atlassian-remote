@@ -18,6 +18,7 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
@@ -96,10 +97,12 @@ public class DownloadController {
             }
             case CONFLUENCE -> {
                 ConfluenceContext confluenceContext = (ConfluenceContext) context;
+                ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(
+                        confluenceContext.getParentId());
 
                 yield confluenceClient.getAttachmentData(
                         confluenceContext.getCloudId().toString(),
-                        confluenceContext.getParentId(),
+                        confluenceContentReference.getId(),
                         confluenceContext.getAttachmentId(),
                         xForgeTokenRepository.getXForgeToken(
                                 SecurityUtils.getCurrentXForgeUserTokenId(),

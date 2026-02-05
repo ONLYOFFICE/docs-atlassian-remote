@@ -30,4 +30,6 @@ public class ConfluenceAttachment {
     private String title;
     private Map<String, Object> operations;
     private ConfluenceAttachmentVersion version;
+    private String pageId;
+    private String blogPostId;
 }

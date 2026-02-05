@@ -18,6 +18,7 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
@@ -25,7 +26,7 @@ import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
-import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluencePage;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceContent;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceSettings;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceUser;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
@@ -155,7 +156,7 @@ public class EditorController {
         return minInstant.toEpochMilli();
     }
 
-    private void preloadConfluenceResources(final UUID cloudId, final String pageId, final String attachmentId) {
+    private void preloadConfluenceResources(final UUID cloudId, final String parentId, final String attachmentId) {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
 
         String xForgeUserToken = xForgeTokenRepository.getXForgeToken(
@@ -167,20 +168,24 @@ public class EditorController {
                 XForgeTokenType.SYSTEM
         );
 
-        confluenceClient.getPage(cloudId, pageId, xForgeUserToken);
-
         CompletableFuture<ConfluenceUser> confluenceUser = runWithRequestContext(
                 requestAttributes,
                 () ->
                         confluenceClient.getUser(cloudId.toString(), xForgeUserToken)
         );
 
-        CompletableFuture<ConfluencePage> confluencePage = runWithRequestContext(
+        ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(parentId);
+
+        CompletableFuture<ConfluenceContent> confluenceContent = runWithRequestContext(
                 requestAttributes,
                 () ->
-                        confluenceClient.getPage(cloudId, pageId, xForgeUserToken)
+                        confluenceClient.getContent(
+                                cloudId,
+                                confluenceContentReference.getContentType(),
+                                confluenceContentReference.getId(),
+                                xForgeUserToken
+                        )
         );
-
 
         CompletableFuture<ConfluenceAttachment> confluenceAttachment = runWithRequestContext(
                 requestAttributes,
@@ -201,7 +206,7 @@ public class EditorController {
                         )
         );
 
-        CompletableFuture.allOf(confluenceUser, confluencePage, confluenceAttachment, confluenceSettings).join();
+        CompletableFuture.allOf(confluenceUser, confluenceContent, confluenceAttachment, confluenceSettings).join();
     }
 
     private <T> CompletableFuture<T> runWithRequestContext(

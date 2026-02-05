@@ -12,7 +12,7 @@
 
     <suppress files="DocsAtlassianRemoteApplication.java" checks="HideUtilityClassConstructor"/>
     <suppress files="ConfluenceUser.java" checks="MemberName"/>
-    <suppress files="ConfluencePage.java" checks="MemberName"/>
+    <suppress files="ConfluenceContent.java" checks="MemberName"/>
 
     <suppress files=".*Test.java" checks="HideUtilityClassConstructor"/>
     <suppress files=".*Test.java" checks="MethodName"/>

@@ -20,12 +20,13 @@ package com.onlyoffice.docs.atlassian.remote.sdk.manager;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
-import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluencePage;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceContent;
 import com.onlyoffice.docs.atlassian.remote.configuration.ForgeProperties;
 import com.onlyoffice.docs.atlassian.remote.security.RemoteAppJwtService;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
@@ -110,10 +111,13 @@ public class UrlManagerImpl extends DefaultUrlManager {
             }
             case CONFLUENCE -> {
                 ConfluenceContext confluenceContext = (ConfluenceContext) context;
+                ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(
+                        confluenceContext.getParentId());
 
-                ConfluencePage page = confluenceClient.getPage(
+                ConfluenceContent content = confluenceClient.getContent(
                         confluenceContext.getCloudId(),
-                        confluenceContext.getParentId(),
+                        confluenceContentReference.getContentType(),
+                        confluenceContentReference.getId(),
                         xForgeTokenRepository.getXForgeToken(
                                 SecurityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
@@ -121,10 +125,10 @@ public class UrlManagerImpl extends DefaultUrlManager {
                 );
 
                 return UriComponentsBuilder
-                        .fromUriString(page.get_links().getBase())
-                        .path(page.get_links().getWebui().replaceAll("(/spaces/~[^/]+).*", "$1"))
+                        .fromUriString(content.get_links().getBase())
+                        .path(content.get_links().getWebui().replaceAll("(/spaces/~[^/]+).*", "$1"))
                         .path("/apps/{appId}/{environmentId}/onlyoffice-docs")
-                        .queryParam("parentId", confluenceContext.getParentId())
+                        .queryParam("parentId", confluenceContentReference.getId())
                         .buildAndExpand(
                                 forgeProperties.getAppIdByProductWithoutPrefix(product),
                                 confluenceContext.getEnvironmentId()

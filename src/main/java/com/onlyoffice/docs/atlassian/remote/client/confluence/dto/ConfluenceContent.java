@@ -22,7 +22,7 @@ import lombok.Data;
 
 
 @Data
-public class ConfluencePage {
+public class ConfluenceContent {
     private String id;
     private String title;
     private String spaceId;
