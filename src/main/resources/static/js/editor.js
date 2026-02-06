@@ -129,6 +129,10 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         }
 
+        const onRequestOpen = (event) => {
+            events.emit("REQUEST_OPEN", event.data);
+        }
+
         const onRequestUsers = function(event) {
             switch (event.data.c) {
                 case "info":
@@ -147,6 +151,7 @@ document.addEventListener("DOMContentLoaded", function() {
         config.events = {
             onDocumentReady: onDocumentReady,
             onRequestClose: onRequestClose,
+            onRequestOpen: onRequestOpen,
             onRequestUsers: onRequestUsers,
             onRequestReferenceData: onRequestReferenceData
         };
