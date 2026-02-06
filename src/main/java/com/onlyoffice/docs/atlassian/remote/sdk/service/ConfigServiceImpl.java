@@ -44,6 +44,7 @@ import com.onlyoffice.manager.url.UrlManager;
 import com.onlyoffice.model.common.User;
 import com.onlyoffice.model.documenteditor.config.EditorConfig;
 import com.onlyoffice.model.documenteditor.config.document.Permissions;
+import com.onlyoffice.model.documenteditor.config.document.ReferenceData;
 import com.onlyoffice.model.documenteditor.config.document.Type;
 import com.onlyoffice.model.documenteditor.config.editorconfig.Customization;
 import com.onlyoffice.model.documenteditor.config.editorconfig.Mode;
@@ -113,6 +114,20 @@ public class ConfigServiceImpl extends DefaultConfigService {
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
+    }
+
+    @Override
+    public ReferenceData getReferenceData(final String fileId) {
+        Context context = securityUtils.getCurrentAppContext();
+
+        return switch (context.getProduct()) {
+            case JIRA -> super.getReferenceData(fileId);
+            case CONFLUENCE -> ReferenceData.builder()
+                    .instanceId(securityUtils.getCurrentXForgeSystemTokenId())
+                    .fileKey(fileId)
+                    .build();
+            default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        };
     }
 
     @Override

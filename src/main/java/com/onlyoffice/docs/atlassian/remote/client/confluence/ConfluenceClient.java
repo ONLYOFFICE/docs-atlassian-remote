@@ -77,6 +77,25 @@ public class ConfluenceClient {
     }
 
     @RequestCacheable
+    public List<ConfluenceAttachment> getAttachmentsForContent(final UUID cloudId, final String contentType,
+                                                               final String id, final String fileName,
+                                                               final String token) {
+        return atlassianWebClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/ex/confluence/{cloudId}/wiki/api/v2/{contentType}s/{id}/attachments")
+                        .queryParam("filename", fileName)
+                        .build(cloudId, contentType, id)
+                )
+                .headers(httpHeaders -> {
+                    httpHeaders.setBearerAuth(token);
+                })
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<ConfluenceResults<ConfluenceAttachment>>() { })
+                .block()
+                .getResults();
+    }
+
+    @RequestCacheable
     public ConfluenceAttachment getAttachment(final UUID cloudId, final String attachmentId, final String token) {
         return atlassianWebClient.get()
                 .uri(

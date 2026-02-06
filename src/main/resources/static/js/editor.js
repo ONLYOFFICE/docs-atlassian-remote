@@ -113,6 +113,10 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         })
 
+        events.on("SET_REFERENCE_DATA", (data) => {
+            editor.setReferenceData(data);
+        });
+
         const onDocumentReady = () => {
             events.emit("DOCUMENT_READY", {
                 demo: settings.demo
@@ -136,10 +140,15 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         };
 
+        const onRequestReferenceData = function(event) {
+            events.emit("REQUEST_REFERENCE_DATA", event.data);
+        }
+
         config.events = {
             onDocumentReady: onDocumentReady,
             onRequestClose: onRequestClose,
-            onRequestUsers: onRequestUsers
+            onRequestUsers: onRequestUsers,
+            onRequestReferenceData: onRequestReferenceData
         };
 
         startSession();
