@@ -20,14 +20,9 @@ package com.onlyoffice.docs.atlassian.remote.web.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.onlyoffice.docs.atlassian.remote.aop.CurrentAccountId;
-import com.onlyoffice.docs.atlassian.remote.aop.CurrentFitContext;
-import com.onlyoffice.docs.atlassian.remote.aop.CurrentProduct;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
-import com.onlyoffice.docs.atlassian.remote.api.FitContext;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
-import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.security.RemoteAppJwtService;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
@@ -65,29 +60,28 @@ public class RemoteAuthorizationController {
 
     @PostMapping
     public ResponseEntity<AuthorizationResponse> getAuthorization(
-            final @CurrentFitContext FitContext fitContext,
-            final @CurrentProduct Product product,
-            final @CurrentAccountId String accountId,
             final @RequestHeader("x-forge-oauth-system") String xForgeSystemToken,
             final @RequestHeader("x-forge-oauth-user") String xForgeUserToken,
             final @Valid @RequestBody AuthorizationRequest request
     ) throws ParseException {
-        Context remoteAppTokenContext = switch (product) {
+        Context context = securityUtils.getCurrentAppContext();
+
+        Context remoteAppTokenContext = switch (context.getProduct()) {
             case JIRA -> JiraContext.builder()
-                    .product(product)
-                    .cloudId(fitContext.cloudId())
-                    .environmentId(fitContext.environmentId())
+                    .product(context.getProduct())
+                    .cloudId(context.getCloudId())
+                    .environmentId(context.getEnvironmentId())
                     .issueId(request.getParentId())
                     .attachmentId(request.getEntityId())
                     .build();
             case CONFLUENCE -> ConfluenceContext.builder()
-                    .product(product)
-                    .cloudId(fitContext.cloudId())
-                    .environmentId(fitContext.environmentId())
+                    .product(context.getProduct())
+                    .cloudId(context.getCloudId())
+                    .environmentId(context.getEnvironmentId())
                     .parentId(request.getParentId())
                     .attachmentId(request.getEntityId())
                     .build();
-            default ->  throw new UnsupportedOperationException("Unsupported product: " + product);
+            default ->  throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         };
 
         xForgeTokenRepository.saveXForgeToken(
@@ -102,15 +96,15 @@ public class RemoteAuthorizationController {
                 securityUtils.createXForgeUserTokenId(
                         remoteAppTokenContext.getProduct(),
                         remoteAppTokenContext.getCloudId(),
-                        accountId
+                        securityUtils.getCurrentAccountId()
                 ),
                 xForgeUserToken,
                 XForgeTokenType.USER
         );
 
         String token = remoteAppJwtService.encode(
-                accountId,
-                "/editor/" + product.toString().toLowerCase(),
+                securityUtils.getCurrentAccountId(),
+                "/editor/" + context.getProduct().toString().toLowerCase(),
                 ttlDefault,
                 objectMapper.convertValue(remoteAppTokenContext, new TypeReference<Map<String, Object>>() { })
         ).getTokenValue();
