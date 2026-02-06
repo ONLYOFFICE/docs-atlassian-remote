@@ -18,11 +18,13 @@
 
 package com.onlyoffice.docs.atlassian.remote.security;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
+import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,9 +42,11 @@ import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
@@ -57,6 +61,9 @@ public class RemoteAppJwtService {
     private final NimbusJwtDecoder nimbusJwtDecoder;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Value("${app.security.ttl.default}")
+    private long ttlDefault;
 
     public RemoteAppJwtService(final @Value("${app.security.secret}") String secret) {
         SecretKey secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "RAW");
@@ -138,5 +145,24 @@ public class RemoteAppJwtService {
         nimbusJwtDecoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(validators));
 
         return nimbusJwtDecoder.decode(token);
+    }
+
+    public URI signUri(final URI uri, final String accountId, final Context context) {
+        return signUri(uri, accountId, context, ttlDefault);
+    }
+
+    public URI signUri(final URI uri, final String accountId, final Context context, final long timeToLive) {
+        String token = encode(
+                accountId,
+                uri.getPath(),
+                timeToLive,
+                objectMapper.convertValue(context, new TypeReference<Map<String, Object>>() { })
+        ).getTokenValue();
+
+
+        return UriComponentsBuilder.fromUri(uri)
+                .queryParam("token", token)
+                .build()
+                .toUri();
     }
 }

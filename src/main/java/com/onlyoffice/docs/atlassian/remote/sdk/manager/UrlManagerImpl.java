@@ -18,8 +18,6 @@
 
 package com.onlyoffice.docs.atlassian.remote.sdk.manager;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
@@ -31,35 +29,30 @@ import com.onlyoffice.docs.atlassian.remote.configuration.ForgeProperties;
 import com.onlyoffice.docs.atlassian.remote.security.RemoteAppJwtService;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
+import com.onlyoffice.docs.atlassian.remote.util.RemoteAppUrlProvider;
 import com.onlyoffice.manager.settings.SettingsManager;
 import com.onlyoffice.manager.url.DefaultUrlManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.Map;
-
 
 @Component
 public class UrlManagerImpl extends DefaultUrlManager {
     private final ConfluenceClient confluenceClient;
     private final XForgeTokenRepository xForgeTokenRepository;
+    private final RemoteAppUrlProvider remoteAppUrlProvider;
     private final RemoteAppJwtService remoteAppJwtService;
     private final ForgeProperties forgeProperties;
     private final SecurityUtils securityUtils;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    @Value("${app.base-url}")
-    private String baseUrl;
-    @Value("${app.security.ttl.default}")
-    private long ttlDefault;
     @Value("${app.security.ttl.callback}")
     private long ttlCallback;
 
     public UrlManagerImpl(final SettingsManager settingsManager,
                           final ConfluenceClient confluenceClient,
                           final XForgeTokenRepository xForgeTokenRepository,
+                          final RemoteAppUrlProvider remoteAppUrlProvider,
                           final RemoteAppJwtService remoteAppJwtService,
                           final ForgeProperties forgeProperties,
                           final SecurityUtils securityUtils
@@ -67,6 +60,7 @@ public class UrlManagerImpl extends DefaultUrlManager {
         super(settingsManager);
 
         this.xForgeTokenRepository = xForgeTokenRepository;
+        this.remoteAppUrlProvider = remoteAppUrlProvider;
         this.confluenceClient = confluenceClient;
         this.remoteAppJwtService = remoteAppJwtService;
         this.forgeProperties = forgeProperties;
@@ -76,31 +70,24 @@ public class UrlManagerImpl extends DefaultUrlManager {
     @Override
     public String getFileUrl(final String fileId) {
         Context context = securityUtils.getCurrentAppContext();
-        String path = "/api/v1/download/" + context.getProduct().toString().toLowerCase();
 
-        String token = remoteAppJwtService.encode(
+        return remoteAppJwtService.signUri(
+                remoteAppUrlProvider.getDownloadUrl(context.getProduct()),
                 securityUtils.getCurrentAccountId(),
-                path,
-                ttlDefault,
-                objectMapper.convertValue(context, new TypeReference<Map<String, Object>>() { })
-        ).getTokenValue();
-
-        return baseUrl + path + "?token=" + token;
+                context
+        ).toString();
     }
 
     @Override
     public String getCallbackUrl(final String fileId) {
         Context context = securityUtils.getCurrentAppContext();
-        String path = "/api/v1/callback/" + context.getProduct().toString().toLowerCase();
 
-        String token = remoteAppJwtService.encode(
+        return remoteAppJwtService.signUri(
+                remoteAppUrlProvider.getCallbackUrl(context.getProduct()),
                 securityUtils.getCurrentAccountId(),
-                path,
-                ttlCallback,
-                objectMapper.convertValue(context, new TypeReference<Map<String, Object>>() { })
-        ).getTokenValue();
-
-        return baseUrl + path + "?token=" + token;
+                context,
+                ttlCallback
+        ).toString();
     }
 
     @Override
