@@ -26,13 +26,12 @@ import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraAttachment;
 import com.onlyoffice.docs.atlassian.remote.client.jira.JiraClient;
+import com.onlyoffice.docs.atlassian.remote.sdk.Utils;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
 import com.onlyoffice.manager.document.DefaultDocumentManager;
 import com.onlyoffice.manager.settings.SettingsManager;
 import org.springframework.stereotype.Component;
-
-import java.time.Instant;
 
 
 @Component
@@ -69,12 +68,9 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
             case CONFLUENCE:
                 ConfluenceAttachment confluenceAttachment = getConfluenceAttachment(fileId);
 
-                return String.format(
-                        "%s_%s_%s_%s",
-                        context.getProduct(),
+                return Utils.createConfluenceDocumentKey(
                         context.getCloudId(),
-                        fileId,
-                        Instant.parse(confluenceAttachment.getVersion().getCreatedAt()).toEpochMilli()
+                        confluenceAttachment
                 );
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
