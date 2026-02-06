@@ -67,6 +67,7 @@ public class EditorController {
     private final UrlManager urlManager;
     private final XForgeTokenRepository xForgeTokenRepository;
     private final ConfluenceClient confluenceClient;
+    private final SecurityUtils securityUtils;
 
     @Value("${app.editor-session.time-until-expiration}")
     private long editorSessionTimeUntilExpiration;
@@ -77,7 +78,7 @@ public class EditorController {
             final @RequestParam Mode mode,
             final Model model
     ) throws ParseException {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
         Product product = context.getProduct();
 
         Config config = switch (product) {
@@ -111,7 +112,7 @@ public class EditorController {
 
     @GetMapping(path = {"jira", "confluence"}, params = "format=json")
     public ResponseEntity<EditorResponse> editorData(final @RequestParam Mode mode) throws ParseException {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
         Product product = context.getProduct();
 
         Config config = switch (product) {
@@ -139,12 +140,12 @@ public class EditorController {
 
     private long getSessionExpires() throws ParseException {
         Instant xForgeSystemTokenExpiration = xForgeTokenRepository.getXForgeTokenExpiration(
-                SecurityUtils.getCurrentXForgeSystemTokenId(),
+                securityUtils.getCurrentXForgeSystemTokenId(),
                 XForgeTokenType.SYSTEM
         );
 
         Instant xForgeUserTokenExpiration = xForgeTokenRepository.getXForgeTokenExpiration(
-                SecurityUtils.getCurrentXForgeUserTokenId(),
+                securityUtils.getCurrentXForgeUserTokenId(),
                 XForgeTokenType.USER
         );
 
@@ -160,11 +161,11 @@ public class EditorController {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
 
         String xForgeUserToken = xForgeTokenRepository.getXForgeToken(
-                SecurityUtils.getCurrentXForgeUserTokenId(),
+                securityUtils.getCurrentXForgeUserTokenId(),
                 XForgeTokenType.USER
         );
         String xForgeSystemToken = xForgeTokenRepository.getXForgeToken(
-                SecurityUtils.getCurrentXForgeSystemTokenId(),
+                securityUtils.getCurrentXForgeSystemTokenId(),
                 XForgeTokenType.SYSTEM
         );
 

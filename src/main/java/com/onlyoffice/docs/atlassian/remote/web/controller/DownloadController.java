@@ -54,6 +54,7 @@ public class DownloadController {
     private final JiraClient jiraClient;
     private final ConfluenceClient confluenceClient;
     private final XForgeTokenRepository xForgeTokenRepository;
+    private final SecurityUtils securityUtils;
 
     @GetMapping({"jira", "confluence"})
     public ResponseEntity<Void> download(final @RequestHeader Map<String, String> headers) {
@@ -79,7 +80,7 @@ public class DownloadController {
             }
         }
 
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
 
         ClientResponse clientResponse = switch (context.getProduct()) {
             case JIRA -> {
@@ -90,7 +91,7 @@ public class DownloadController {
                         jiraContext.getCloudId().toString(),
                         jiraContext.getAttachmentId(),
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
                 );
@@ -105,7 +106,7 @@ public class DownloadController {
                         confluenceContentReference.getId(),
                         confluenceContext.getAttachmentId(),
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
                 );

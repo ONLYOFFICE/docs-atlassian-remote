@@ -40,20 +40,23 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
     private final JiraClient jiraClient;
     private final ConfluenceClient confluenceClient;
     private final XForgeTokenRepository xForgeTokenRepository;
+    private final SecurityUtils securityUtils;
 
     public DocumentManagerImpl(final SettingsManager settingsManager, final JiraClient jiraClient,
                                final ConfluenceClient confluenceClient,
-                               final XForgeTokenRepository xForgeTokenRepository) {
+                               final XForgeTokenRepository xForgeTokenRepository,
+                               final SecurityUtils securityUtils) {
         super(settingsManager);
 
         this.jiraClient = jiraClient;
         this.confluenceClient = confluenceClient;
         this.xForgeTokenRepository = xForgeTokenRepository;
+        this.securityUtils = securityUtils;
     }
 
     @Override
     public String getDocumentKey(final String fileId, final boolean embedded) {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
 
         switch (context.getProduct()) {
             case JIRA:
@@ -80,7 +83,7 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
 
     @Override
     public String getDocumentName(final String fileId) {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
 
         switch (context.getProduct()) {
             case JIRA:
@@ -97,22 +100,22 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
     }
 
     private JiraAttachment getJiraAttachment(final String attachmentId) {
-        JiraContext jiraContext = (JiraContext) SecurityUtils.getCurrentAppContext();
+        JiraContext jiraContext = (JiraContext) securityUtils.getCurrentAppContext();
 
         return jiraClient.getAttachment(
                 jiraContext.getCloudId(),
                 attachmentId,
-                xForgeTokenRepository.getXForgeToken(SecurityUtils.getCurrentXForgeUserTokenId(), XForgeTokenType.USER)
+                xForgeTokenRepository.getXForgeToken(securityUtils.getCurrentXForgeUserTokenId(), XForgeTokenType.USER)
         );
     }
 
     private ConfluenceAttachment getConfluenceAttachment(final String attachmentId) {
-        ConfluenceContext confluenceContext = (ConfluenceContext) SecurityUtils.getCurrentAppContext();
+        ConfluenceContext confluenceContext = (ConfluenceContext) securityUtils.getCurrentAppContext();
 
         return confluenceClient.getAttachment(
                 confluenceContext.getCloudId(),
                 attachmentId,
-                xForgeTokenRepository.getXForgeToken(SecurityUtils.getCurrentXForgeUserTokenId(), XForgeTokenType.USER)
+                xForgeTokenRepository.getXForgeToken(securityUtils.getCurrentXForgeUserTokenId(), XForgeTokenType.USER)
         );
     }
 }

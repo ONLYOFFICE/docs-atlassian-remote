@@ -46,6 +46,7 @@ public class UrlManagerImpl extends DefaultUrlManager {
     private final XForgeTokenRepository xForgeTokenRepository;
     private final RemoteAppJwtService remoteAppJwtService;
     private final ForgeProperties forgeProperties;
+    private final SecurityUtils securityUtils;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -60,7 +61,8 @@ public class UrlManagerImpl extends DefaultUrlManager {
                           final ConfluenceClient confluenceClient,
                           final XForgeTokenRepository xForgeTokenRepository,
                           final RemoteAppJwtService remoteAppJwtService,
-                          final ForgeProperties forgeProperties
+                          final ForgeProperties forgeProperties,
+                          final SecurityUtils securityUtils
     ) {
         super(settingsManager);
 
@@ -68,15 +70,16 @@ public class UrlManagerImpl extends DefaultUrlManager {
         this.confluenceClient = confluenceClient;
         this.remoteAppJwtService = remoteAppJwtService;
         this.forgeProperties = forgeProperties;
+        this.securityUtils = securityUtils;
     }
 
     @Override
     public String getFileUrl(final String fileId) {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
         String path = "/api/v1/download/" + context.getProduct().toString().toLowerCase();
 
         String token = remoteAppJwtService.encode(
-                SecurityUtils.getCurrentPrincipal().getSubject(),
+                securityUtils.getCurrentPrincipal().getSubject(),
                 path,
                 ttlDefault,
                 objectMapper.convertValue(context, new TypeReference<Map<String, Object>>() { })
@@ -87,11 +90,11 @@ public class UrlManagerImpl extends DefaultUrlManager {
 
     @Override
     public String getCallbackUrl(final String fileId) {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
         String path = "/api/v1/callback/" + context.getProduct().toString().toLowerCase();
 
         String token = remoteAppJwtService.encode(
-                SecurityUtils.getCurrentPrincipal().getSubject(),
+                securityUtils.getCurrentPrincipal().getSubject(),
                 path,
                 ttlCallback,
                 objectMapper.convertValue(context, new TypeReference<Map<String, Object>>() { })
@@ -102,7 +105,7 @@ public class UrlManagerImpl extends DefaultUrlManager {
 
     @Override
     public String getGobackUrl(final String fileId) {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
         Product product = context.getProduct();
 
         switch (product) {
@@ -119,7 +122,7 @@ public class UrlManagerImpl extends DefaultUrlManager {
                         confluenceContentReference.getContentType(),
                         confluenceContentReference.getId(),
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
                 );
