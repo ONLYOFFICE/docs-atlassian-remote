@@ -23,10 +23,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
-import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.security.RemoteAppJwtService;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
-import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
 import com.onlyoffice.docs.atlassian.remote.web.dto.authorization.AuthorizationRequest;
 import com.onlyoffice.docs.atlassian.remote.web.dto.authorization.AuthorizationResponse;
 import jakarta.validation.Valid;
@@ -35,7 +33,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -53,15 +50,12 @@ public class RemoteAuthorizationController {
     private long ttlDefault;
 
     private final RemoteAppJwtService remoteAppJwtService;
-    private final XForgeTokenRepository xForgeTokenRepository;
     private final SecurityUtils securityUtils;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @PostMapping
     public ResponseEntity<AuthorizationResponse> getAuthorization(
-            final @RequestHeader("x-forge-oauth-system") String xForgeSystemToken,
-            final @RequestHeader("x-forge-oauth-user") String xForgeUserToken,
             final @Valid @RequestBody AuthorizationRequest request
     ) throws ParseException {
         Context context = securityUtils.getCurrentAppContext();
@@ -83,24 +77,6 @@ public class RemoteAuthorizationController {
                     .build();
             default ->  throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         };
-
-        xForgeTokenRepository.saveXForgeToken(
-                securityUtils.createXForgeSystemTokenId(
-                        remoteAppTokenContext.getProduct(),
-                        remoteAppTokenContext.getCloudId()
-                ),
-                xForgeSystemToken,
-                XForgeTokenType.SYSTEM
-        );
-        xForgeTokenRepository.saveXForgeToken(
-                securityUtils.createXForgeUserTokenId(
-                        remoteAppTokenContext.getProduct(),
-                        remoteAppTokenContext.getCloudId(),
-                        securityUtils.getCurrentAccountId()
-                ),
-                xForgeUserToken,
-                XForgeTokenType.USER
-        );
 
         String token = remoteAppJwtService.encode(
                 securityUtils.getCurrentAccountId(),
