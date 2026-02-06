@@ -21,20 +21,28 @@ package com.onlyoffice.docs.atlassian.remote.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
+import com.onlyoffice.docs.atlassian.remote.api.FitContext;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
+import com.onlyoffice.docs.atlassian.remote.configuration.ForgeProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
+@RequiredArgsConstructor
 public class SecurityUtils {
+    private final ForgeProperties forgeProperties;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public Authentication getCurrentAuthentication() {
@@ -67,19 +75,35 @@ public class SecurityUtils {
         Jwt jwt = getCurrentPrincipal();
 
         Map<String, Object> contextAsMap = jwt.getClaimAsMap("context");
-        if (contextAsMap == null || !contextAsMap.containsKey("product")) {
+
+        if (Objects.isNull(contextAsMap)) {
             throw new IllegalStateException("JWT context claim is missing or invalid");
         }
 
-        String product = (String) contextAsMap.get("product");
+        Product product = extractProduct(jwt).orElse(null);
+        if (Objects.nonNull(product)) {
+            FitContext fitContext = objectMapper.convertValue(contextAsMap, FitContext.class);
 
-        switch (Product.valueOf(product)) {
+            return Context.builder()
+                    .product(product)
+                    .cloudId(fitContext.cloudId())
+                    .environmentId(fitContext.environmentId())
+                    .build();
+        }
+
+        if (!contextAsMap.containsKey("product")) {
+            throw new IllegalStateException("JWT context claim is missing or invalid");
+        }
+
+        String productFromContext = (String) contextAsMap.get("product");
+
+        switch (Product.valueOf(productFromContext)) {
             case JIRA:
                 return (Context) objectMapper.convertValue(contextAsMap, JiraContext.class);
             case CONFLUENCE:
                 return (Context) objectMapper.convertValue(contextAsMap, ConfluenceContext.class);
             default:
-                throw new UnsupportedOperationException("Unsupported product: " + product);
+                throw new UnsupportedOperationException("Unsupported product: " + productFromContext);
         }
     }
 
@@ -113,4 +137,12 @@ public class SecurityUtils {
         );
     }
 
+    public Optional<Product> extractProduct(final Jwt jwt) {
+        List<String> audience = jwt.getAudience();
+        if (Objects.isNull(audience) || audience.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(forgeProperties.getProductByAppId(audience.get(0)));
+    }
 }
