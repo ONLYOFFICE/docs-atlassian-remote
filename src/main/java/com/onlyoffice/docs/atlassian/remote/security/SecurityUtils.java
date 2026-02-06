@@ -37,7 +37,7 @@ import java.util.UUID;
 public class SecurityUtils {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public Jwt getCurrentPrincipal() {
+    public Authentication getCurrentAuthentication() {
         SecurityContext securityContext = SecurityContextHolder.getContext();
         Authentication authentication = securityContext.getAuthentication();
 
@@ -45,12 +45,22 @@ public class SecurityUtils {
             throw new IllegalStateException("No authentication found in SecurityContext");
         }
 
+        return authentication;
+    }
+
+    public Jwt getCurrentPrincipal() {
+        Authentication authentication = getCurrentAuthentication();
+
         Object principal = authentication.getPrincipal();
         if (!(principal instanceof Jwt jwt)) {
             throw new IllegalStateException("Authentication principal is not a Jwt");
         }
 
         return jwt;
+    }
+
+    public String getCurrentAccountId() {
+        return getCurrentAuthentication().getName();
     }
 
     public Context getCurrentAppContext() {
@@ -80,10 +90,10 @@ public class SecurityUtils {
     }
 
     public String getCurrentXForgeUserTokenId() {
-        Jwt principal = getCurrentPrincipal();
+        String accountId = getCurrentAccountId();
         Context context = getCurrentAppContext();
 
-        return createXForgeUserTokenId(context.getProduct(), context.getCloudId(), principal.getSubject());
+        return createXForgeUserTokenId(context.getProduct(), context.getCloudId(), accountId);
     }
 
     public String createXForgeSystemTokenId(final Product product, final UUID cloudId) {

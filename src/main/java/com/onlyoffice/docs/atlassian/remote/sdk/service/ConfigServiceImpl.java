@@ -152,7 +152,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 JiraPermission deleteAttachments;
 
                 if (jiraAttachment.getAuthor().getAccountId()
-                        .equals(securityUtils.getCurrentPrincipal().getSubject())) {
+                        .equals(securityUtils.getCurrentAccountId())) {
                     deleteAttachments = jiraPermissions.getPermissions()
                             .get(JiraPermissionsKey.DELETE_OWN_ATTACHMENTS);
                 } else {

@@ -79,7 +79,7 @@ public class UrlManagerImpl extends DefaultUrlManager {
         String path = "/api/v1/download/" + context.getProduct().toString().toLowerCase();
 
         String token = remoteAppJwtService.encode(
-                securityUtils.getCurrentPrincipal().getSubject(),
+                securityUtils.getCurrentAccountId(),
                 path,
                 ttlDefault,
                 objectMapper.convertValue(context, new TypeReference<Map<String, Object>>() { })
@@ -94,7 +94,7 @@ public class UrlManagerImpl extends DefaultUrlManager {
         String path = "/api/v1/callback/" + context.getProduct().toString().toLowerCase();
 
         String token = remoteAppJwtService.encode(
-                securityUtils.getCurrentPrincipal().getSubject(),
+                securityUtils.getCurrentAccountId(),
                 path,
                 ttlCallback,
                 objectMapper.convertValue(context, new TypeReference<Map<String, Object>>() { })
