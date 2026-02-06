@@ -18,21 +18,17 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
-import com.onlyoffice.docs.atlassian.remote.aop.CurrentFitContext;
-import com.onlyoffice.docs.atlassian.remote.aop.CurrentProduct;
-import com.onlyoffice.docs.atlassian.remote.api.FitContext;
-import com.onlyoffice.docs.atlassian.remote.api.Product;
+import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.entity.DemoServerConnection;
 import com.onlyoffice.docs.atlassian.remote.entity.DemoServerConnectionId;
 import com.onlyoffice.docs.atlassian.remote.service.DemoServerConnectionService;
+import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.docs.atlassian.remote.web.dto.settings.SettingsResponse;
 import com.onlyoffice.utils.ConfigurationUtils;
 import jakarta.persistence.EntityExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,16 +46,15 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/remote/settings")
 public class RemoteSettingsController {
+    private final SecurityUtils securityUtils;
     private final DemoServerConnectionService demoServerConnectionService;
 
     @GetMapping
-    public ResponseEntity<SettingsResponse> getSettings(
-            final @CurrentFitContext FitContext fitContext,
-            final @CurrentProduct Product product
-    ) throws ParseException {
+    public ResponseEntity<SettingsResponse> getSettings() throws ParseException {
+        Context context = securityUtils.getCurrentAppContext();
         DemoServerConnectionId demoServerConnectionId = DemoServerConnectionId.builder()
-                .cloudId(fitContext.cloudId())
-                .product(product)
+                .cloudId(context.getCloudId())
+                .product(context.getProduct())
                 .build();
 
         DemoServerConnection demoServerConnection = demoServerConnectionService.findById(demoServerConnectionId);
@@ -88,14 +83,11 @@ public class RemoteSettingsController {
     }
 
     @PostMapping
-    public ResponseEntity<SettingsResponse> saveSettings(
-            final @AuthenticationPrincipal Jwt principal,
-            final @CurrentFitContext FitContext fitContext,
-            final @CurrentProduct Product product
-    ) throws ParseException {
+    public ResponseEntity<SettingsResponse> saveSettings() throws ParseException {
+        Context context = securityUtils.getCurrentAppContext();
         DemoServerConnectionId demoServerConnectionId = DemoServerConnectionId.builder()
-                .cloudId(fitContext.cloudId())
-                .product(product)
+                .cloudId(context.getCloudId())
+                .product(context.getProduct())
                 .build();
 
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");

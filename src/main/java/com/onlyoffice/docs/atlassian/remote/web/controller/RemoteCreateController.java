@@ -18,12 +18,10 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
-import com.onlyoffice.docs.atlassian.remote.aop.CurrentFitContext;
-import com.onlyoffice.docs.atlassian.remote.aop.CurrentProduct;
-import com.onlyoffice.docs.atlassian.remote.api.FitContext;
-import com.onlyoffice.docs.atlassian.remote.api.Product;
+import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.client.jira.JiraClient;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraAttachment;
+import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.docs.atlassian.remote.web.dto.create.CreateRequest;
 import com.onlyoffice.docs.atlassian.remote.web.dto.create.CreateResponse;
 import com.onlyoffice.manager.document.DocumentManager;
@@ -53,15 +51,15 @@ import java.util.Locale;
 public class RemoteCreateController {
     private final DocumentManager documentManager;
     private final JiraClient jiraClient;
+    private final SecurityUtils securityUtils;
 
     @PostMapping
     public ResponseEntity<CreateResponse> createAttachment(
-            final @CurrentFitContext FitContext fitContext,
-            final @CurrentProduct Product product,
             final @RequestHeader("x-forge-oauth-user") String xForgeUserToken,
             final @Valid @RequestBody CreateRequest request
     ) {
-        String issueId = request.getParentId();
+        Context context = securityUtils.getCurrentAppContext();
+        String parentId = request.getParentId();
         String title = request.getTitle();
         DocumentType documentType = request.getDocumentType();
         String locale = request.getLocale();
@@ -73,11 +71,11 @@ public class RemoteCreateController {
                 Locale.forLanguageTag(locale)
         );
 
-        switch (product) {
+        switch (context.getProduct()) {
             case JIRA:
                 List<JiraAttachment> newAttachments = jiraClient.createAttachment(
-                        fitContext.cloudId(),
-                        issueId,
+                        context.getCloudId(),
+                        parentId,
                         toDataBufferFlux(newBlankFile),
                         title + "." + fileExtension,
                         xForgeUserToken
@@ -90,7 +88,7 @@ public class RemoteCreateController {
                         )
                 );
             default:
-                throw new UnsupportedOperationException("Unsupported product: " + product);
+                throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
     }
 
