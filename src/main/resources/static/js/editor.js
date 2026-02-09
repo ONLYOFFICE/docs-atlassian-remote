@@ -75,10 +75,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 } else {
                     const data = await response.json();
                     const newConfig = data.config;
-                    const sessionExpires = data.sessionExpires;
 
                     newConfig.events = config.events;
+
                     config = newConfig;
+                    sessionExpires = data.sessionExpires;
 
                     events.emit("CONFIG_UPDATED");
                 }
