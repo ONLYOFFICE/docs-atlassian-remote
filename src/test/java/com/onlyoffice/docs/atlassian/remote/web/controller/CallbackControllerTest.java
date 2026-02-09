@@ -66,6 +66,7 @@ public class CallbackControllerTest extends AbstractControllerTest {
         Context remoteAppTokenContext = JiraContext.builder()
                 .product(product)
                 .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
                 .issueId("parentId")
                 .attachmentId("entityId")
                 .build();
@@ -104,6 +105,7 @@ public class CallbackControllerTest extends AbstractControllerTest {
         Context remoteAppTokenContext = JiraContext.builder()
                 .product(product)
                 .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
                 .issueId("parentId")
                 .attachmentId("entityId")
                 .build();
@@ -150,6 +152,7 @@ public class CallbackControllerTest extends AbstractControllerTest {
         Context remoteAppTokenContext = JiraContext.builder()
                 .product(product)
                 .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
                 .issueId("parentId")
                 .attachmentId("entityId")
                 .build();
