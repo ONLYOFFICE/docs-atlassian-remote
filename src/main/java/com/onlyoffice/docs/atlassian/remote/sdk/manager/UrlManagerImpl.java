@@ -36,6 +36,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.Optional;
+
 
 @Component
 public class UrlManagerImpl extends DefaultUrlManager {
@@ -114,10 +116,14 @@ public class UrlManagerImpl extends DefaultUrlManager {
                         )
                 );
 
+                Optional<String> blogsFilter = Optional.ofNullable(
+                        "blogpost".equals(confluenceContentReference.getContentType()) ? "blogs" : null);
+
                 return UriComponentsBuilder
                         .fromUriString(content.get_links().getBase())
                         .path(content.get_links().getWebui().replaceAll("(/spaces/~[^/]+).*", "$1"))
                         .path("/apps/{appId}/{environmentId}/onlyoffice-docs")
+                        .queryParamIfPresent("filter", blogsFilter)
                         .queryParam("parentId", confluenceContentReference.getId())
                         .buildAndExpand(
                                 forgeProperties.getAppIdByProductWithoutPrefix(product),
