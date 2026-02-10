@@ -46,7 +46,7 @@ import static com.onlyoffice.docs.atlassian.remote.Constants.SETTINGS_KEY;
 
 @AllArgsConstructor
 @Component
-public class SettingsMangerImpl extends DefaultSettingsManager {
+public class SettingsManagerImpl extends DefaultSettingsManager {
     private final JiraClient jiraClient;
     private final ConfluenceClient confluenceClient;
     private final XForgeTokenRepository xForgeTokenRepository;
