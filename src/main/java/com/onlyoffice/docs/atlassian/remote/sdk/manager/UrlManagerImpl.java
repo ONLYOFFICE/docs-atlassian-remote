@@ -122,7 +122,7 @@ public class UrlManagerImpl extends DefaultUrlManager {
                 return UriComponentsBuilder
                         .fromUriString(content.get_links().getBase())
                         .path(content.get_links().getWebui().replaceAll("(/spaces/~[^/]+).*", "$1"))
-                        .path("/apps/{appId}/{environmentId}/onlyoffice-docs")
+                        .path("/apps/{appId}/{environmentId}/onlyoffice")
                         .queryParamIfPresent("filter", blogsFilter)
                         .queryParam("parentId", confluenceContentReference.getId())
                         .buildAndExpand(
