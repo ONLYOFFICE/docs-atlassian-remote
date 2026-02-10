@@ -41,7 +41,7 @@ import java.util.Optional;
 
 @AllArgsConstructor
 @Component
-public class SettingsMangerImpl extends DefaultSettingsManager {
+public class SettingsManagerImpl extends DefaultSettingsManager {
     private static final String SETTINGS_KEY = "onlyoffice-docs.settings";
 
     private final JiraClient jiraClient;
