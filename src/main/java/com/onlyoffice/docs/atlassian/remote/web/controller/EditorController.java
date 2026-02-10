@@ -18,6 +18,7 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
+import com.onlyoffice.docs.atlassian.remote.Constants;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
@@ -202,7 +203,7 @@ public class EditorController {
                 requestAttributes,
                 () ->
                         confluenceClient.getSettings(
-                                "onlyoffice-docs.settings",
+                                Constants.SETTINGS_KEY,
                                 xForgeSystemToken
                         )
         );
