@@ -43,3 +43,6 @@ spring:
 atlassian:
   api:
     base-url: https://api.atlassian.com
+
+server:
+  max-http-request-header-size: 16KB
