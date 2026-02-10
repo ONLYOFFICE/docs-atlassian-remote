@@ -24,10 +24,12 @@ import com.onlyoffice.docs.atlassian.remote.api.FitContext;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.entity.DemoServerConnection;
 import com.onlyoffice.docs.atlassian.remote.entity.DemoServerConnectionId;
-import com.onlyoffice.docs.atlassian.remote.repository.DemoServerConnectionRepository;
+import com.onlyoffice.docs.atlassian.remote.service.DemoServerConnectionService;
 import com.onlyoffice.docs.atlassian.remote.web.dto.settings.SettingsResponse;
 import com.onlyoffice.utils.ConfigurationUtils;
+import jakarta.persistence.EntityExistsException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -48,7 +50,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/remote/settings")
 public class RemoteSettingsController {
-    private final DemoServerConnectionRepository demoServerConnectionRepository;
+    private final DemoServerConnectionService demoServerConnectionService;
 
     @GetMapping
     public ResponseEntity<SettingsResponse> getSettings(
@@ -60,8 +62,7 @@ public class RemoteSettingsController {
                 .product(product)
                 .build();
 
-        DemoServerConnection demoServerConnection = demoServerConnectionRepository.findById(demoServerConnectionId)
-                .orElse(null);
+        DemoServerConnection demoServerConnection = demoServerConnectionService.findById(demoServerConnectionId);
 
         if (Objects.isNull(demoServerConnection)) {
             return ResponseEntity.ok(new SettingsResponse(
@@ -97,20 +98,16 @@ public class RemoteSettingsController {
                 .product(product)
                 .build();
 
-        DemoServerConnection demoServerConnection = demoServerConnectionRepository.findById(demoServerConnectionId)
-                .orElse(null);
-
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
-        if (Objects.isNull(demoServerConnection)) {
-            Date date = new Date();
-
-            demoServerConnection = demoServerConnectionRepository.save(
-                    DemoServerConnection.builder()
-                            .id(demoServerConnectionId)
-                            .startDate(dateFormat.format(date))
-                            .build()
+        DemoServerConnection demoServerConnection;
+        try {
+            demoServerConnection = demoServerConnectionService.create(
+                    demoServerConnectionId,
+                    dateFormat.format(new Date())
             );
+        } catch (EntityExistsException | DataIntegrityViolationException e) {
+            demoServerConnection = demoServerConnectionService.findById(demoServerConnectionId);
         }
 
         Date startDemo = dateFormat.parse(demoServerConnection.getStartDate());

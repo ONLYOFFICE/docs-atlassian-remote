@@ -25,6 +25,7 @@ import com.onlyoffice.docs.atlassian.remote.entity.DemoServerConnectionId;
 import com.onlyoffice.docs.atlassian.remote.repository.DemoServerConnectionRepository;
 import com.onlyoffice.docs.atlassian.remote.web.data.DataTest;
 import com.onlyoffice.utils.ConfigurationUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,10 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mockStatic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -50,6 +54,11 @@ public class RemoteSettingsControllerTest extends AbstractControllerTest {
     private DemoServerConnectionRepository demoServerConnectionRepository;
 
     private final DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
+    @BeforeEach
+    public void setUp() {
+        demoServerConnectionRepository.deleteAll();
+    }
 
     @Test
     public void whenGetSettingsWithoutAuthorization_returnUnauthorized() throws Exception {
@@ -162,15 +171,48 @@ public class RemoteSettingsControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void whenPostSettingsWithoutExistingDemoConnection_createNewTrialAndReturnData() throws Exception {
+    public void whenPostSettingsWithExistingDemoConnection_returnExistingTrialData() throws Exception {
         JiraUser user = DataTest.Users.ADMIN;
+
+        Calendar pastDate = Calendar.getInstance();
+        pastDate.add(Calendar.DATE, -10);
+        String originalStartDate = dateFormat.format(pastDate.getTime());
 
         DemoServerConnectionId connectionId = DemoServerConnectionId.builder()
                 .cloudId(DataTest.testCloudId)
                 .product(Product.JIRA)
                 .build();
 
-        demoServerConnectionRepository.deleteById(connectionId);
+        demoServerConnectionRepository.save(
+                DemoServerConnection.builder()
+                        .id(connectionId)
+                        .startDate(originalStartDate)
+                        .build()
+        );
+
+        mockMvc.perform(post(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", JIRA_APP_ID)
+                                        .claim("principal", user.getAccountId())
+                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                )
+                        )
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.demoAvailable").value(true))
+                .andExpect(jsonPath("$.demoStart").exists())
+                .andExpect(jsonPath("$.demoEnd").exists());
+
+        Optional<DemoServerConnection> connection = demoServerConnectionRepository.findById(connectionId);
+        assertTrue(connection.isPresent());
+        assertEquals(originalStartDate, connection.get().getStartDate());
+    }
+
+    @Test
+    public void whenPostSettingsWithoutExistingDemoConnection_createNewTrialAndReturnData() throws Exception {
+        JiraUser user = DataTest.Users.ADMIN;
 
         mockMvc.perform(post(REQUEST_MAPPING)
                         .with(SecurityMockMvcRequestPostProcessors.jwt()
