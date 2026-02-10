@@ -97,7 +97,7 @@ public class EditorController {
         Instant minInstant = xForgeSystemTokenExpiration.compareTo(xForgeUserTokenExpiration) <= 0
                 ? xForgeSystemTokenExpiration : xForgeUserTokenExpiration;
 
-        minInstant.minus(editorSessionTimeUntilExpiration, ChronoUnit.MINUTES);
+        minInstant =  minInstant.minus(editorSessionTimeUntilExpiration, ChronoUnit.MINUTES);
 
         return minInstant.toEpochMilli();
     }
