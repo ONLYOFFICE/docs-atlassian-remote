@@ -58,6 +58,7 @@ public class RemoteAuthorizationController {
 
     private final RemoteAppJwtService remoteAppJwtService;
     private final XForgeTokenRepository xForgeTokenRepository;
+    private final SecurityUtils securityUtils;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -81,7 +82,7 @@ public class RemoteAuthorizationController {
         };
 
         xForgeTokenRepository.saveXForgeToken(
-                SecurityUtils.createXForgeSystemTokenId(
+                securityUtils.createXForgeSystemTokenId(
                         remoteAppTokenContext.getProduct(),
                         remoteAppTokenContext.getCloudId()
                 ),
@@ -89,7 +90,7 @@ public class RemoteAuthorizationController {
                 XForgeTokenType.SYSTEM
         );
         xForgeTokenRepository.saveXForgeToken(
-                SecurityUtils.createXForgeUserTokenId(
+                securityUtils.createXForgeUserTokenId(
                         remoteAppTokenContext.getProduct(),
                         remoteAppTokenContext.getCloudId(),
                         accountId

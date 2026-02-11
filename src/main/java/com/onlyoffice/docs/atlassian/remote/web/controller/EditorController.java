@@ -52,6 +52,7 @@ public class EditorController {
     private final SettingsManager settingsManager;
     private final UrlManager urlManager;
     private final XForgeTokenRepository xForgeTokenRepository;
+    private final SecurityUtils securityUtils;
 
     @Value("${app.editor-session.time-until-expiration}")
     private long editorSessionTimeUntilExpiration;
@@ -62,7 +63,7 @@ public class EditorController {
             final @RequestParam Mode mode,
             final Model model
     ) throws ParseException {
-        JiraContext jiraContext = (JiraContext) SecurityUtils.getCurrentAppContext();
+        JiraContext jiraContext = (JiraContext) securityUtils.getCurrentAppContext();
 
         Config config = configService.createConfig(jiraContext.getAttachmentId(), mode, Type.DESKTOP);
         model.addAttribute("config", config);
@@ -76,7 +77,7 @@ public class EditorController {
 
     @GetMapping(path = "/jira", params = "format=json")
     public ResponseEntity<EditorResponse> editorJiraData(final @RequestParam Mode mode) throws ParseException {
-        JiraContext jiraContext = (JiraContext) SecurityUtils.getCurrentAppContext();
+        JiraContext jiraContext = (JiraContext) securityUtils.getCurrentAppContext();
 
         Config config = configService.createConfig(jiraContext.getAttachmentId(), mode, Type.DESKTOP);
 
@@ -85,12 +86,12 @@ public class EditorController {
 
     private long getSessionExpires() throws ParseException {
         Instant xForgeSystemTokenExpiration = xForgeTokenRepository.getXForgeTokenExpiration(
-                SecurityUtils.getCurrentXForgeSystemTokenId(),
+                securityUtils.getCurrentXForgeSystemTokenId(),
                 XForgeTokenType.SYSTEM
         );
 
         Instant xForgeUserTokenExpiration = xForgeTokenRepository.getXForgeTokenExpiration(
-                SecurityUtils.getCurrentXForgeUserTokenId(),
+                securityUtils.getCurrentXForgeUserTokenId(),
                 XForgeTokenType.USER
         );
 

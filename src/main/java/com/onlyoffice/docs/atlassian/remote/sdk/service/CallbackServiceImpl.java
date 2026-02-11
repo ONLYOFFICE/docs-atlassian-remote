@@ -41,23 +41,26 @@ public class CallbackServiceImpl extends DefaultCallbackService {
     private final DocumentServerClient documentServerClient;
     private final JiraClient jiraClient;
     private final XForgeTokenRepository xForgeTokenRepository;
+    private final SecurityUtils securityUtils;
 
 
     public CallbackServiceImpl(final JwtManager jwtManager,
                                final SettingsManager settingsManager,
                                final DocumentServerClient documentServerClient,
                                final JiraClient jiraClient,
-                               final XForgeTokenRepository xForgeTokenRepository) {
+                               final XForgeTokenRepository xForgeTokenRepository,
+                               final SecurityUtils securityUtils) {
         super(jwtManager, settingsManager);
 
         this.documentServerClient = documentServerClient;
         this.jiraClient = jiraClient;
         this.xForgeTokenRepository = xForgeTokenRepository;
+        this.securityUtils = securityUtils;
     }
 
     @Override
     public void handlerSave(final Callback callback, final String fileId) throws Exception {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
         String url = callback.getUrl();
 
         switch (context.getProduct()) {
@@ -68,7 +71,7 @@ public class CallbackServiceImpl extends DefaultCallbackService {
                         jiraContext.getCloudId(),
                         jiraContext.getAttachmentId(),
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
                 );
@@ -81,7 +84,7 @@ public class CallbackServiceImpl extends DefaultCallbackService {
                         file,
                         jiraAttachment.getFilename(),
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
                 );
@@ -90,7 +93,7 @@ public class CallbackServiceImpl extends DefaultCallbackService {
                         jiraContext.getCloudId(),
                         jiraContext.getAttachmentId(),
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
                 );

@@ -50,6 +50,7 @@ public class DownloadController {
     private final JwtManager jwtManager;
     private final JiraClient jiraClient;
     private final XForgeTokenRepository xForgeTokenRepository;
+    private final SecurityUtils securityUtils;
 
     @GetMapping("jira")
     public ResponseEntity<Void> downloadJira(final @RequestHeader Map<String, String> headers) {
@@ -75,13 +76,13 @@ public class DownloadController {
             }
         }
 
-        JiraContext jiraContext = (JiraContext) SecurityUtils.getCurrentAppContext();
+        JiraContext jiraContext = (JiraContext) securityUtils.getCurrentAppContext();
 
         ClientResponse clientResponse = jiraClient.getAttachmentData(
                 jiraContext.getCloudId().toString(),
                 jiraContext.getAttachmentId(),
                 xForgeTokenRepository.getXForgeToken(
-                        SecurityUtils.getCurrentXForgeUserTokenId(),
+                        securityUtils.getCurrentXForgeUserTokenId(),
                         XForgeTokenType.USER
                 )
         );

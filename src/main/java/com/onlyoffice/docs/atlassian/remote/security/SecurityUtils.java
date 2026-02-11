@@ -26,18 +26,17 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+@Component
+public class SecurityUtils {
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-public final class SecurityUtils {
-    private SecurityUtils() { }
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-    public static Jwt getCurrentPrincipal() {
+    public Jwt getCurrentPrincipal() {
         SecurityContext securityContext = SecurityContextHolder.getContext();
         Authentication authentication = securityContext.getAuthentication();
 
@@ -53,7 +52,7 @@ public final class SecurityUtils {
         return jwt;
     }
 
-    public static Context getCurrentAppContext() {
+    public Context getCurrentAppContext() {
         Jwt jwt = getCurrentPrincipal();
 
         Map<String, Object> contextAsMap = jwt.getClaimAsMap("context");
@@ -65,26 +64,26 @@ public final class SecurityUtils {
 
         switch (Product.valueOf(product)) {
             case JIRA:
-                return (Context) OBJECT_MAPPER.convertValue(contextAsMap, JiraContext.class);
+                return (Context) objectMapper.convertValue(contextAsMap, JiraContext.class);
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + product);
         }
     }
 
-    public static String getCurrentXForgeSystemTokenId() {
+    public String getCurrentXForgeSystemTokenId() {
         Context context = getCurrentAppContext();
 
         return createXForgeSystemTokenId(context.getProduct(), context.getCloudId());
     }
 
-    public static String getCurrentXForgeUserTokenId() {
+    public String getCurrentXForgeUserTokenId() {
         Jwt principal = getCurrentPrincipal();
         Context context = getCurrentAppContext();
 
         return createXForgeUserTokenId(context.getProduct(), context.getCloudId(), principal.getSubject());
     }
 
-    public static String createXForgeSystemTokenId(final Product product, final UUID cloudId) {
+    public String createXForgeSystemTokenId(final Product product, final UUID cloudId) {
         return String.format(
                 "%s:%s",
                 product,
@@ -92,7 +91,7 @@ public final class SecurityUtils {
         );
     }
 
-    public static String createXForgeUserTokenId(final Product product, final UUID cloudId, final String accountId) {
+    public String createXForgeUserTokenId(final Product product, final UUID cloudId, final String accountId) {
         return String.format(
                 "%s:%s:%s",
                 product,

@@ -50,30 +50,33 @@ import java.util.List;
 public class ConfigServiceImpl extends DefaultConfigService {
     private final JiraClient jiraClient;
     private final XForgeTokenRepository xForgeTokenRepository;
+    private final SecurityUtils securityUtils;
 
     public ConfigServiceImpl(final DocumentManager documentManager,
                              final UrlManager urlManager,
                              final JwtManager jwtManager,
                              final SettingsManager settingsManager, final JiraClient jiraClient,
-                             final XForgeTokenRepository xForgeTokenRepository) {
+                             final XForgeTokenRepository xForgeTokenRepository,
+                             final SecurityUtils securityUtils) {
         super(documentManager, urlManager, jwtManager, settingsManager);
 
         this.xForgeTokenRepository = xForgeTokenRepository;
         this.jiraClient = jiraClient;
+        this.securityUtils = securityUtils;
     }
 
     @Override
     public EditorConfig getEditorConfig(final String fileId, final Mode mode, final Type type) {
         EditorConfig editorConfig = super.getEditorConfig(fileId, mode, type);
 
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
 
         switch (context.getProduct()) {
             case JIRA:
                 JiraUser user = jiraClient.getUser(
                         context.getCloudId().toString(),
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
                 );
@@ -88,7 +91,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
 
     @Override
     public Permissions getPermissions(final String fileId) {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
 
         switch (context.getProduct()) {
             case JIRA:
@@ -98,7 +101,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                         jiraContext.getCloudId(),
                         fileId,
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
                 );
@@ -112,7 +115,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                                 JiraPermissionsKey.DELETE_ALL_ATTACHMENTS
                         ),
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
                 );
@@ -123,7 +126,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 JiraPermission deleteAttachments;
 
                 if (jiraAttachment.getAuthor().getAccountId()
-                        .equals(SecurityUtils.getCurrentPrincipal().getSubject())) {
+                        .equals(securityUtils.getCurrentPrincipal().getSubject())) {
                     deleteAttachments = jiraPermissions.getPermissions()
                             .get(JiraPermissionsKey.DELETE_OWN_ATTACHMENTS);
                 } else {
@@ -154,14 +157,14 @@ public class ConfigServiceImpl extends DefaultConfigService {
 
     @Override
     public User getUser() {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
 
         switch (context.getProduct()) {
             case JIRA:
                 JiraUser user = jiraClient.getUser(
                         context.getCloudId().toString(),
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
                 );

@@ -47,12 +47,13 @@ public class SettingsManagerImpl extends DefaultSettingsManager {
     private final JiraClient jiraClient;
     private final XForgeTokenRepository xForgeTokenRepository;
     private final DemoServerConnectionRepository demoServerConnectionRepository;
+    private final SecurityUtils securityUtils;
 
     private final Map<String, String> settings = new HashMap<>();
 
     @Override
     public String getSetting(final String name) {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
 
         if (!Objects.isNull(context)) {
             if (name.equals("demo-start")) {
@@ -74,7 +75,7 @@ public class SettingsManagerImpl extends DefaultSettingsManager {
                 JiraSettings jiraSettings = jiraClient.getSettings(
                         SETTINGS_KEY,
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeSystemTokenId(),
+                                securityUtils.getCurrentXForgeSystemTokenId(),
                                 XForgeTokenType.SYSTEM
                         )
                 );
