@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.testcontainers.shaded.com.fasterxml.jackson.core.type.TypeReference;
+import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -87,7 +88,7 @@ public class CallbackControllerTest extends AbstractControllerTest {
                 any(),
                 any()
         )).thenReturn(
-                DataTest.Settings.CORRECT_SETTINGS
+                Mono.just(DataTest.Settings.CORRECT_SETTINGS)
         );
 
         mockMvc.perform(post(JIRA_CALLBACK_PATH)
@@ -126,7 +127,7 @@ public class CallbackControllerTest extends AbstractControllerTest {
                 any(),
                 any()
         )).thenReturn(
-                DataTest.Settings.CORRECT_SETTINGS
+                Mono.just(DataTest.Settings.CORRECT_SETTINGS)
         );
 
         Callback callback = DataTest.Callbacks.getTestCallback();
@@ -173,7 +174,7 @@ public class CallbackControllerTest extends AbstractControllerTest {
                 any(),
                 any()
         )).thenReturn(
-                DataTest.Settings.CORRECT_SETTINGS
+                Mono.just(DataTest.Settings.CORRECT_SETTINGS)
         );
 
         Callback callback = DataTest.Callbacks.getTestCallback();

@@ -32,6 +32,7 @@ import com.onlyoffice.manager.settings.SettingsManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -114,16 +115,21 @@ public class DownloadController {
             default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         };
 
-        HttpHeaders httpHeaders = new HttpHeaders();
-        clientResponse.headers().asHttpHeaders().forEach((httpHeader, values) -> {
-            if (!httpHeader.equalsIgnoreCase("Transfer-Encoding")) {
-                httpHeaders.put(httpHeader, values);
-            }
-        });
+        try {
+            HttpStatusCode status = clientResponse.statusCode();
+            HttpHeaders httpHeaders = new HttpHeaders();
+            clientResponse.headers().asHttpHeaders().forEach((httpHeader, values) -> {
+                if (!httpHeader.equalsIgnoreCase("Transfer-Encoding")) {
+                    httpHeaders.put(httpHeader, values);
+                }
+            });
 
-        return ResponseEntity
-                .status(clientResponse.statusCode())
-                .headers(httpHeaders)
-                .build();
+            return ResponseEntity
+                    .status(status)
+                    .headers(httpHeaders)
+                    .build();
+        } finally {
+            clientResponse.releaseBody().block();
+        }
     }
 }

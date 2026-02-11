@@ -102,7 +102,7 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
                 jiraContext.getCloudId(),
                 attachmentId,
                 xForgeTokenRepository.getXForgeToken(securityUtils.getCurrentXForgeUserTokenId(), XForgeTokenType.USER)
-        );
+        ).block();
     }
 
     private ConfluenceAttachment getConfluenceAttachment(final String attachmentId) {

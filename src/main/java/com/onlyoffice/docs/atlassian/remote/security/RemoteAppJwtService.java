@@ -29,7 +29,9 @@ import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -39,9 +41,11 @@ import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
+import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.crypto.SecretKey;
@@ -49,6 +53,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,12 +72,43 @@ public class RemoteAppJwtService {
 
     public RemoteAppJwtService(final @Value("${app.security.secret}") String secret) {
         SecretKey secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "RAW");
-        JWKSource<SecurityContext> jwkSource = new ImmutableSecret<>(secret.getBytes());
+        JWKSource<SecurityContext> jwkSource = new ImmutableSecret<>(secret.getBytes(StandardCharsets.UTF_8));
+
+        List<OAuth2TokenValidator<Jwt>> validators = List.of(
+                new JwtTimestampValidator(),
+                new JwtClaimValidator<>(JwtClaimNames.SUB, (String sub) -> Objects.nonNull(sub) && !sub.isBlank()),
+                new JwtClaimValidator<>("context",
+                        (Map<String, Object> contextAsMap) -> {
+                            try {
+                                if (contextAsMap == null || !contextAsMap.containsKey("product")) {
+                                    return false;
+                                }
+
+                                String product = (String) contextAsMap.get("product");
+
+                                switch (Product.valueOf(product)) {
+                                    case JIRA:
+                                        objectMapper.convertValue(contextAsMap, JiraContext.class);
+                                        return true;
+                                    case CONFLUENCE:
+                                        objectMapper.convertValue(contextAsMap, ConfluenceContext.class);
+                                        return true;
+                                    default:
+                                        return false;
+                                }
+                            } catch (Exception e) {
+                                return false;
+                            }
+
+                        }
+                )
+        );
 
         this.nimbusJwtDecoder = NimbusJwtDecoder
                 .withSecretKey(secretKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
+        nimbusJwtDecoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(validators));
 
         this.nimbusJwtEncoder = new NimbusJwtEncoder(jwkSource);
     }
@@ -111,40 +147,32 @@ public class RemoteAppJwtService {
     }
 
     public Jwt decode(final String token, final String audience) {
-        List<OAuth2TokenValidator<Jwt>> validators = List.of(
-                new JwtTimestampValidator(),
-                new JwtAudienceValidator(audience),
-                new JwtClaimValidator<>(JwtClaimNames.SUB, (String sub) -> Objects.nonNull(sub) && !sub.isBlank()),
-                new JwtClaimValidator<>("context",
-                        (Map<String, Object> contextAsMap) -> {
-                            try {
-                                if (contextAsMap == null || !contextAsMap.containsKey("product")) {
-                                    return false;
-                                }
+        Jwt jwt = nimbusJwtDecoder.decode(token);
 
-                                String product = (String) contextAsMap.get("product");
+        JwtAudienceValidator jwtAudienceValidator = new JwtAudienceValidator(audience);
 
-                                switch (Product.valueOf(product)) {
-                                    case JIRA:
-                                        objectMapper.convertValue(contextAsMap, JiraContext.class);
-                                        return true;
-                                    case CONFLUENCE:
-                                        objectMapper.convertValue(contextAsMap, ConfluenceContext.class);
-                                        return true;
-                                    default:
-                                        return false;
-                                }
-                            } catch (Exception e) {
-                                return false;
-                            }
+        OAuth2TokenValidatorResult result = jwtAudienceValidator.validate(jwt);
+        if (result.hasErrors()) {
+            Collection<OAuth2Error> errors = result.getErrors();
+            String validationErrorString = this.getJwtValidationExceptionMessage(errors);
 
-                        }
-                )
-        );
+            throw new JwtValidationException(validationErrorString, errors);
+        } else {
+            return jwt;
+        }
+    }
 
-        nimbusJwtDecoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(validators));
+    private String getJwtValidationExceptionMessage(final Collection<OAuth2Error> errors) {
+        for (OAuth2Error oAuth2Error : errors) {
+            if (StringUtils.hasLength(oAuth2Error.getDescription())) {
+                return String.format(
+                        "An error occurred while attempting to decode the Jwt: %s",
+                        oAuth2Error.getDescription()
+                );
+            }
+        }
 
-        return nimbusJwtDecoder.decode(token);
+        return "Unable to validate Jwt";
     }
 
     public URI signUri(final URI uri, final String accountId, final Context context) {

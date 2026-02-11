@@ -36,8 +36,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -53,81 +51,73 @@ public class SettingsManagerImpl extends DefaultSettingsManager {
     private final DemoServerConnectionRepository demoServerConnectionRepository;
     private final SecurityUtils securityUtils;
 
-    private final Map<String, String> settings = new HashMap<>();
-
     @Override
     public String getSetting(final String name) {
         Context context = securityUtils.getCurrentAppContext();
         Product product = context.getProduct();
 
-        if (!Objects.isNull(context)) {
-            if (name.equals("demo-start")) {
-               DemoServerConnection demoServerConnection = demoServerConnectionRepository.findById(
-                        DemoServerConnectionId.builder()
-                                .cloudId(context.getCloudId())
-                                .product(product)
-                                .build()
-                ).orElse(null);
+        if (name.equals("demo-start")) {
+           DemoServerConnection demoServerConnection = demoServerConnectionRepository.findById(
+                    DemoServerConnectionId.builder()
+                            .cloudId(context.getCloudId())
+                            .product(product)
+                            .build()
+            ).orElse(null);
 
-               if (Objects.nonNull(demoServerConnection)) {
-                   return demoServerConnection.getStartDate();
-               } else {
-                   return null;
-               }
-            }
-
-            return switch (product) {
-                case JIRA -> {
-                    try {
-                        JiraSettings jiraSettings = jiraClient.getSettings(
-                                SETTINGS_KEY,
-                                xForgeTokenRepository.getXForgeToken(
-                                        securityUtils.getCurrentXForgeSystemTokenId(),
-                                        XForgeTokenType.SYSTEM
-                                )
-                        );
-
-                        yield Optional.ofNullable(jiraSettings.getValue().get(name))
-                                .map(String::valueOf)
-                                .orElse(null);
-                    } catch (WebClientResponseException e) {
-                        if (HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
-                            yield null;
-                        } else {
-                            throw e;
-                        }
-                    }
-                }
-                case CONFLUENCE -> {
-                    try {
-                        ConfluenceSettings confluenceSettings = confluenceClient.getSettings(
-                                SETTINGS_KEY,
-                                xForgeTokenRepository.getXForgeToken(
-                                        securityUtils.getCurrentXForgeSystemTokenId(),
-                                        XForgeTokenType.SYSTEM
-                                )
-                        );
-
-                        yield Optional.ofNullable(confluenceSettings.getValue().get(name))
-                                .map(String::valueOf)
-                                .orElse(null);
-                    } catch (WebClientResponseException e) {
-                        if (HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
-                            yield null;
-                        } else {
-                            throw e;
-                        }
-                    }
-                }
-            };
-
+           if (Objects.nonNull(demoServerConnection)) {
+               return demoServerConnection.getStartDate();
+           } else {
+               return null;
+           }
         }
 
-        return settings.get(name);
+        return switch (product) {
+            case JIRA -> {
+                try {
+                    JiraSettings jiraSettings = jiraClient.getSettings(
+                            SETTINGS_KEY,
+                            xForgeTokenRepository.getXForgeToken(
+                                    securityUtils.getCurrentXForgeSystemTokenId(),
+                                    XForgeTokenType.SYSTEM
+                            )
+                    ).block();
+
+                    yield Optional.ofNullable(jiraSettings.getValue().get(name))
+                            .map(String::valueOf)
+                            .orElse(null);
+                } catch (WebClientResponseException e) {
+                    if (HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
+                        yield null;
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+            case CONFLUENCE -> {
+                try {
+                    ConfluenceSettings confluenceSettings = confluenceClient.getSettings(
+                            SETTINGS_KEY,
+                            xForgeTokenRepository.getXForgeToken(
+                                    securityUtils.getCurrentXForgeSystemTokenId(),
+                                    XForgeTokenType.SYSTEM
+                            )
+                    );
+
+                    yield Optional.ofNullable(confluenceSettings.getValue().get(name))
+                            .map(String::valueOf)
+                            .orElse(null);
+                } catch (WebClientResponseException e) {
+                    if (HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
+                        yield null;
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+        };
     }
 
     @Override
     public void setSetting(final String name, final String value) {
-        settings.put(name, value);
     }
 }
