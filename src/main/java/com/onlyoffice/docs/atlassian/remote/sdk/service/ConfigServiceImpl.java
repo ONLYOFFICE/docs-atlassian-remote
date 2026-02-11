@@ -74,12 +74,12 @@ public class ConfigServiceImpl extends DefaultConfigService {
         switch (context.getProduct()) {
             case JIRA:
                 JiraUser user = jiraClient.getUser(
-                        context.getCloudId().toString(),
+                        context.getCloudId(),
                         xForgeTokenRepository.getXForgeToken(
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
-                );
+                ).block();
 
                 editorConfig.setLang(user.getLocale());
 
@@ -104,7 +104,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
-                );
+                ).block();
 
                 JiraPermissions jiraPermissions = jiraClient.getIssuePermissions(
                         jiraContext.getCloudId(),
@@ -118,7 +118,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
-                );
+                ).block();
 
                 JiraPermission createAttachments = jiraPermissions.getPermissions()
                         .get(JiraPermissionsKey.CREATE_ATTACHMENTS);
@@ -162,12 +162,12 @@ public class ConfigServiceImpl extends DefaultConfigService {
         switch (context.getProduct()) {
             case JIRA:
                 JiraUser user = jiraClient.getUser(
-                        context.getCloudId().toString(),
+                        context.getCloudId(),
                         xForgeTokenRepository.getXForgeToken(
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
-                );
+                ).block();
 
                 return User.builder()
                         .id(user.getAccountId())

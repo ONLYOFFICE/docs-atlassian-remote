@@ -74,7 +74,7 @@ public class CallbackServiceImpl extends DefaultCallbackService {
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
-                );
+                ).block();
 
                 Flux<DataBuffer> file = documentServerClient.getFile(url);
 

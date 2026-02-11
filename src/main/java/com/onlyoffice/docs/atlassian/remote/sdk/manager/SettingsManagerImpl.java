@@ -78,7 +78,7 @@ public class SettingsManagerImpl extends DefaultSettingsManager {
                                 securityUtils.getCurrentXForgeSystemTokenId(),
                                 XForgeTokenType.SYSTEM
                         )
-                );
+                ).block();
 
                 return Optional.ofNullable(jiraSettings.getValue().get(name))
                         .map(String::valueOf)

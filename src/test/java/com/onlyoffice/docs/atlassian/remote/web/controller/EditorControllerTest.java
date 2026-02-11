@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.testcontainers.shaded.com.fasterxml.jackson.core.type.TypeReference;
+import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -373,7 +374,7 @@ public class EditorControllerTest extends AbstractControllerTest {
                 any(),
                 any()
         )).thenReturn(
-                DataTest.Attachments.ATTACHMENT
+                Mono.just(DataTest.Attachments.ATTACHMENT)
         );
 
         when(jiraClient.getIssuePermissions(
@@ -382,21 +383,21 @@ public class EditorControllerTest extends AbstractControllerTest {
                 any(),
                 any()
         )).thenReturn(
-                DataTest.Permissions.FULL
+                Mono.just(DataTest.Permissions.FULL)
         );
 
         when(jiraClient.getUser(
                 any(),
                 any()
         )).thenReturn(
-                DataTest.Users.ADMIN
+                Mono.just(DataTest.Users.ADMIN)
         );
 
         when(jiraClient.getSettings(
                 any(),
                 any()
         )).thenReturn(
-                DataTest.Settings.CORRECT_SETTINGS
+                Mono.just(DataTest.Settings.CORRECT_SETTINGS)
         );
 
         mockMvc.perform(get(JIRA_EDITOR_PATH)
@@ -438,7 +439,7 @@ public class EditorControllerTest extends AbstractControllerTest {
                 any(),
                 any()
         )).thenReturn(
-                DataTest.Attachments.ATTACHMENT
+                Mono.just(DataTest.Attachments.ATTACHMENT)
         );
 
         when(jiraClient.getIssuePermissions(
@@ -447,21 +448,21 @@ public class EditorControllerTest extends AbstractControllerTest {
                 any(),
                 any()
         )).thenReturn(
-                DataTest.Permissions.FULL
+                Mono.just(DataTest.Permissions.FULL)
         );
 
         when(jiraClient.getUser(
                 any(),
                 any()
         )).thenReturn(
-                DataTest.Users.ADMIN
+                Mono.just(DataTest.Users.ADMIN)
         );
 
         when(jiraClient.getSettings(
                 any(),
                 any()
         )).thenReturn(
-                DataTest.Settings.CORRECT_SETTINGS
+                Mono.just(DataTest.Settings.CORRECT_SETTINGS)
         );
 
         mockMvc.perform(get(JIRA_EDITOR_PATH)
