@@ -18,6 +18,7 @@
 
 package com.onlyoffice.docs.atlassian.remote.sdk.service;
 
+import com.onlyoffice.docs.atlassian.remote.Constants;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
@@ -34,6 +35,7 @@ import com.onlyoffice.manager.security.JwtManager;
 import com.onlyoffice.manager.settings.SettingsManager;
 import com.onlyoffice.manager.url.UrlManager;
 import com.onlyoffice.model.common.User;
+import com.onlyoffice.model.documenteditor.Config;
 import com.onlyoffice.model.documenteditor.config.EditorConfig;
 import com.onlyoffice.model.documenteditor.config.document.Permissions;
 import com.onlyoffice.model.documenteditor.config.document.Type;
@@ -42,8 +44,10 @@ import com.onlyoffice.model.documenteditor.config.editorconfig.Mode;
 import com.onlyoffice.model.documenteditor.config.editorconfig.customization.Close;
 import com.onlyoffice.service.documenteditor.config.DefaultConfigService;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 
 
 @Component
@@ -63,6 +67,21 @@ public class ConfigServiceImpl extends DefaultConfigService {
         this.xForgeTokenRepository = xForgeTokenRepository;
         this.jiraClient = jiraClient;
         this.securityUtils = securityUtils;
+    }
+
+    @Override
+    public Config createConfig(final String fileId, final Mode mode, final Type type) {
+        Context context = securityUtils.getCurrentAppContext();
+
+        switch (context.getProduct()) {
+            case JIRA:
+                preloadJiraResources(context.getCloudId(), ((JiraContext) context).getIssueId(), fileId);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        }
+
+        return super.createConfig(fileId, mode, type);
     }
 
     @Override
@@ -177,5 +196,32 @@ public class ConfigServiceImpl extends DefaultConfigService {
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
+    }
+
+    private void preloadJiraResources(final UUID cloudId, final String issueId, final String attachmentId) {
+        String xForgeUserToken = xForgeTokenRepository.getXForgeToken(
+                securityUtils.getCurrentXForgeUserTokenId(),
+                XForgeTokenType.USER
+        );
+        String xForgeSystemToken = xForgeTokenRepository.getXForgeToken(
+                securityUtils.getCurrentXForgeSystemTokenId(),
+                XForgeTokenType.SYSTEM
+        );
+
+        Mono.zip(
+                jiraClient.getUser(cloudId, xForgeUserToken),
+                jiraClient.getAttachment(cloudId, attachmentId, xForgeUserToken),
+                jiraClient.getIssuePermissions(
+                        cloudId,
+                        issueId,
+                        List.of(
+                                JiraPermissionsKey.CREATE_ATTACHMENTS,
+                                JiraPermissionsKey.DELETE_OWN_ATTACHMENTS,
+                                JiraPermissionsKey.DELETE_ALL_ATTACHMENTS
+                        ),
+                        xForgeUserToken
+                ),
+                jiraClient.getSettings(Constants.SETTINGS_KEY, xForgeSystemToken)
+        ).block();
     }
 }
