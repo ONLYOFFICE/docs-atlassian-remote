@@ -21,6 +21,7 @@ package com.onlyoffice.docs.atlassian.remote.sdk.service;
 import com.onlyoffice.docs.atlassian.remote.Constants;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
@@ -92,6 +93,9 @@ public class ConfigServiceImpl extends DefaultConfigService {
             case JIRA:
                 preloadJiraResources(context.getCloudId(), ((JiraContext) context).getIssueId(), fileId);
                 break;
+            case CONFLUENCE:
+                preloadConfluenceResources(context.getCloudId(), ((ConfluenceContext) context).getParentId(), fileId);
+                break;
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
@@ -120,7 +124,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 return editorConfig;
             case CONFLUENCE:
                 ConfluenceUser confluenceUser = confluenceClient.getUser(
-                        context.getCloudId().toString(),
+                        context.getCloudId(),
                         xForgeTokenRepository.getXForgeToken(
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
@@ -274,7 +278,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                         .build();
             case CONFLUENCE:
                 ConfluenceUser confluenceUser = confluenceClient.getUser(
-                        context.getCloudId().toString(),
+                        context.getCloudId(),
                         xForgeTokenRepository.getXForgeToken(
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
@@ -321,6 +325,34 @@ public class ConfigServiceImpl extends DefaultConfigService {
                         xForgeUserToken
                 ),
                 jiraClient.getSettings(Constants.SETTINGS_KEY, xForgeSystemToken)
+        ).block();
+    }
+
+    private void preloadConfluenceResources(final UUID cloudId, final String parentId, final String attachmentId) {
+        ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(parentId);
+
+        String xForgeUserToken = xForgeTokenRepository.getXForgeToken(
+                securityUtils.getCurrentXForgeUserTokenId(),
+                XForgeTokenType.USER
+        );
+        String xForgeSystemToken = xForgeTokenRepository.getXForgeToken(
+                securityUtils.getCurrentXForgeSystemTokenId(),
+                XForgeTokenType.SYSTEM
+        );
+
+        Mono.zip(
+                confluenceClient.getUser(cloudId, xForgeUserToken),
+                confluenceClient.getContent(
+                        cloudId,
+                        confluenceContentReference.getContentType(),
+                        confluenceContentReference.getId(),
+                        xForgeUserToken
+                ),
+                confluenceClient.getAttachment(cloudId, attachmentId, xForgeUserToken),
+                confluenceClient.getSettings(
+                        Constants.SETTINGS_KEY,
+                        xForgeSystemToken
+                )
         ).block();
     }
 }

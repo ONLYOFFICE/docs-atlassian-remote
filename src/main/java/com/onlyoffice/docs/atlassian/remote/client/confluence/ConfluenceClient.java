@@ -47,7 +47,7 @@ public class ConfluenceClient {
     private final WebClient atlassianWebClient;
 
     @RequestCacheable
-    public Mono<ConfluenceUser> getUser(final String cloudId, final String token) {
+    public Mono<ConfluenceUser> getUser(final UUID cloudId, final String token) {
         return atlassianWebClient.get()
                 .uri("/ex/confluence/{cloudId}/wiki/rest/api/user/current", cloudId)
                 .headers(httpHeaders -> {

@@ -18,18 +18,12 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
-import com.onlyoffice.docs.atlassian.remote.Constants;
-import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
-import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
-import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceContent;
-import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceSettings;
-import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceUser;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
 import com.onlyoffice.docs.atlassian.remote.web.dto.editor.EditorResponse;
@@ -47,16 +41,11 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
 
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 
 @Controller
@@ -91,12 +80,6 @@ public class EditorController {
             case CONFLUENCE -> {
                 ConfluenceContext confluenceContext = (ConfluenceContext) context;
 
-                preloadConfluenceResources(
-                        confluenceContext.getCloudId(),
-                        confluenceContext.getParentId(),
-                        confluenceContext.getAttachmentId()
-                );
-
                 yield configService.createConfig(confluenceContext.getAttachmentId(), mode, Type.DESKTOP);
             }
             default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
@@ -125,12 +108,6 @@ public class EditorController {
             case CONFLUENCE -> {
                 ConfluenceContext confluenceContext = (ConfluenceContext) context;
 
-                preloadConfluenceResources(
-                        confluenceContext.getCloudId(),
-                        confluenceContext.getParentId(),
-                        confluenceContext.getAttachmentId()
-                );
-
                 yield configService.createConfig(confluenceContext.getAttachmentId(), mode, Type.DESKTOP);
             }
             default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
@@ -156,71 +133,5 @@ public class EditorController {
         minInstant =  minInstant.minus(editorSessionTimeUntilExpiration, ChronoUnit.MINUTES);
 
         return minInstant.toEpochMilli();
-    }
-
-    private void preloadConfluenceResources(final UUID cloudId, final String parentId, final String attachmentId) {
-        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-
-        String xForgeUserToken = xForgeTokenRepository.getXForgeToken(
-                securityUtils.getCurrentXForgeUserTokenId(),
-                XForgeTokenType.USER
-        );
-        String xForgeSystemToken = xForgeTokenRepository.getXForgeToken(
-                securityUtils.getCurrentXForgeSystemTokenId(),
-                XForgeTokenType.SYSTEM
-        );
-
-        CompletableFuture<ConfluenceUser> confluenceUser = runWithRequestContext(
-                requestAttributes,
-                () ->
-                        confluenceClient.getUser(cloudId.toString(), xForgeUserToken).block()
-        );
-
-        ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(parentId);
-
-        CompletableFuture<ConfluenceContent> confluenceContent = runWithRequestContext(
-                requestAttributes,
-                () ->
-                        confluenceClient.getContent(
-                                cloudId,
-                                confluenceContentReference.getContentType(),
-                                confluenceContentReference.getId(),
-                                xForgeUserToken
-                        ).block()
-        );
-
-        CompletableFuture<ConfluenceAttachment> confluenceAttachment = runWithRequestContext(
-                requestAttributes,
-                () ->
-                        confluenceClient.getAttachment(
-                                cloudId,
-                                attachmentId,
-                                xForgeUserToken
-                        ).block()
-        );
-
-        CompletableFuture<ConfluenceSettings> confluenceSettings = runWithRequestContext(
-                requestAttributes,
-                () ->
-                        confluenceClient.getSettings(
-                                Constants.SETTINGS_KEY,
-                                xForgeSystemToken
-                        ).block()
-        );
-
-        CompletableFuture.allOf(confluenceUser, confluenceContent, confluenceAttachment, confluenceSettings).join();
-    }
-
-    private <T> CompletableFuture<T> runWithRequestContext(
-            final RequestAttributes requestAttributes,
-            final Supplier<T> supplier) {
-        return CompletableFuture.supplyAsync(() -> {
-            RequestContextHolder.setRequestAttributes(requestAttributes);
-            try {
-                return supplier.get();
-            } finally {
-                RequestContextHolder.resetRequestAttributes();
-            }
-        });
     }
 }
