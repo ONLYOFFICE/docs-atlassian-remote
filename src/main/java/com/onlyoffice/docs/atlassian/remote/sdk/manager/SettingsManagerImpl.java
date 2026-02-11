@@ -33,8 +33,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -49,54 +47,47 @@ public class SettingsManagerImpl extends DefaultSettingsManager {
     private final DemoServerConnectionRepository demoServerConnectionRepository;
     private final SecurityUtils securityUtils;
 
-    private final Map<String, String> settings = new HashMap<>();
-
     @Override
     public String getSetting(final String name) {
         Context context = securityUtils.getCurrentAppContext();
 
-        if (!Objects.isNull(context)) {
-            if (name.equals("demo-start")) {
-               DemoServerConnection demoServerConnection = demoServerConnectionRepository.findById(
-                        DemoServerConnectionId.builder()
-                                .cloudId(context.getCloudId())
-                                .product(context.getProduct())
-                                .build()
-                ).orElse(null);
+        if (name.equals("demo-start")) {
+           DemoServerConnection demoServerConnection = demoServerConnectionRepository.findById(
+                    DemoServerConnectionId.builder()
+                            .cloudId(context.getCloudId())
+                            .product(context.getProduct())
+                            .build()
+            ).orElse(null);
 
-               if (Objects.nonNull(demoServerConnection)) {
-                   return demoServerConnection.getStartDate();
-               } else {
-                   return null;
-               }
-            }
-
-            try {
-                JiraSettings jiraSettings = jiraClient.getSettings(
-                        SETTINGS_KEY,
-                        xForgeTokenRepository.getXForgeToken(
-                                securityUtils.getCurrentXForgeSystemTokenId(),
-                                XForgeTokenType.SYSTEM
-                        )
-                ).block();
-
-                return Optional.ofNullable(jiraSettings.getValue().get(name))
-                        .map(String::valueOf)
-                        .orElse(null);
-            } catch (WebClientResponseException e) {
-                if (HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
-                    return null;
-                } else {
-                    throw e;
-                }
-            }
+           if (Objects.nonNull(demoServerConnection)) {
+               return demoServerConnection.getStartDate();
+           } else {
+               return null;
+           }
         }
 
-        return settings.get(name);
+        try {
+            JiraSettings jiraSettings = jiraClient.getSettings(
+                    SETTINGS_KEY,
+                    xForgeTokenRepository.getXForgeToken(
+                            securityUtils.getCurrentXForgeSystemTokenId(),
+                            XForgeTokenType.SYSTEM
+                    )
+            ).block();
+
+            return Optional.ofNullable(jiraSettings.getValue().get(name))
+                    .map(String::valueOf)
+                    .orElse(null);
+        } catch (WebClientResponseException e) {
+            if (HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
+                return null;
+            } else {
+                throw e;
+            }
+        }
     }
 
     @Override
     public void setSetting(final String name, final String value) {
-        settings.put(name, value);
     }
 }
