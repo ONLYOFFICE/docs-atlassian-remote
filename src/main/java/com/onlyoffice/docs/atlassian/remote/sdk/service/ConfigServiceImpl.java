@@ -125,7 +125,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
-                );
+                ).block();
 
                 editorConfig.setLang(confluenceUser.getLocale());
 
@@ -207,7 +207,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
-                );
+                ).block();
 
                 Map<String, Object> operations = confluenceAttachment.getOperations();
                 boolean canEdit = false;
@@ -279,7 +279,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
-                );
+                ).block();
 
                 ConfluenceLinks links = confluenceUser.get_links();
                 String baseUrl = links.getBase();

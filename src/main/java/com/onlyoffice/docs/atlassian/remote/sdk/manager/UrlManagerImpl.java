@@ -114,7 +114,7 @@ public class UrlManagerImpl extends DefaultUrlManager {
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
-                );
+                ).block();
 
                 Optional<String> blogsFilter = Optional.ofNullable(
                         "blogpost".equals(confluenceContentReference.getContentType()) ? "blogs" : null);

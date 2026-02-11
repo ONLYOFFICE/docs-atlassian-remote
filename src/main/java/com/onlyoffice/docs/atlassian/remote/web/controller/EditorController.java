@@ -173,7 +173,7 @@ public class EditorController {
         CompletableFuture<ConfluenceUser> confluenceUser = runWithRequestContext(
                 requestAttributes,
                 () ->
-                        confluenceClient.getUser(cloudId.toString(), xForgeUserToken)
+                        confluenceClient.getUser(cloudId.toString(), xForgeUserToken).block()
         );
 
         ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(parentId);
@@ -186,7 +186,7 @@ public class EditorController {
                                 confluenceContentReference.getContentType(),
                                 confluenceContentReference.getId(),
                                 xForgeUserToken
-                        )
+                        ).block()
         );
 
         CompletableFuture<ConfluenceAttachment> confluenceAttachment = runWithRequestContext(
@@ -196,7 +196,7 @@ public class EditorController {
                                 cloudId,
                                 attachmentId,
                                 xForgeUserToken
-                        )
+                        ).block()
         );
 
         CompletableFuture<ConfluenceSettings> confluenceSettings = runWithRequestContext(
@@ -205,7 +205,7 @@ public class EditorController {
                         confluenceClient.getSettings(
                                 Constants.SETTINGS_KEY,
                                 xForgeSystemToken
-                        )
+                        ).block()
         );
 
         CompletableFuture.allOf(confluenceUser, confluenceContent, confluenceAttachment, confluenceSettings).join();

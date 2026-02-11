@@ -47,7 +47,7 @@ public class ConfluenceClient {
     private final WebClient atlassianWebClient;
 
     @RequestCacheable
-    public ConfluenceUser getUser(final String cloudId, final String token) {
+    public Mono<ConfluenceUser> getUser(final String cloudId, final String token) {
         return atlassianWebClient.get()
                 .uri("/ex/confluence/{cloudId}/wiki/rest/api/user/current", cloudId)
                 .headers(httpHeaders -> {
@@ -55,11 +55,11 @@ public class ConfluenceClient {
                 })
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<ConfluenceUser>() { })
-                .block();
+                .cache();
     }
 
     @RequestCacheable
-    public ConfluenceContent getContent(final UUID cloudId, final String contentType, final String id,
+    public Mono<ConfluenceContent> getContent(final UUID cloudId, final String contentType, final String id,
                                         final String token) {
         return atlassianWebClient.get()
                 .uri(
@@ -73,13 +73,15 @@ public class ConfluenceClient {
                 })
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<ConfluenceContent>() { })
-                .block();
+                .cache();
     }
 
     @RequestCacheable
-    public List<ConfluenceAttachment> getAttachmentsForContent(final UUID cloudId, final String contentType,
-                                                               final String id, final String fileName,
-                                                               final String token) {
+    public Mono<ConfluenceResults<ConfluenceAttachment>> getAttachmentsForContent(final UUID cloudId,
+                                                                                  final String contentType,
+                                                                                  final String id,
+                                                                                  final String fileName,
+                                                                                  final String token) {
         return atlassianWebClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/ex/confluence/{cloudId}/wiki/api/v2/{contentType}s/{id}/attachments")
@@ -91,12 +93,11 @@ public class ConfluenceClient {
                 })
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<ConfluenceResults<ConfluenceAttachment>>() { })
-                .block()
-                .getResults();
+                .cache();
     }
 
     @RequestCacheable
-    public ConfluenceAttachment getAttachment(final UUID cloudId, final String attachmentId, final String token) {
+    public Mono<ConfluenceAttachment> getAttachment(final UUID cloudId, final String attachmentId, final String token) {
         return atlassianWebClient.get()
                 .uri(
                         "/ex/confluence/{cloudId}/wiki/api/v2/attachments/{attachmentId}?include-operations=true",
@@ -108,7 +109,7 @@ public class ConfluenceClient {
                 })
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<ConfluenceAttachment>() { })
-                .block();
+                .cache();
     }
 
     public ClientResponse getAttachmentData(final String cloudId, final String parentId, final String attachmentId,
@@ -178,7 +179,7 @@ public class ConfluenceClient {
     }
 
     @RequestCacheable
-    public ConfluenceSettings getSettings(final String settingsKey, final String token) {
+    public Mono<ConfluenceSettings> getSettings(final String settingsKey, final String token) {
         return atlassianWebClient.post()
                 .uri("/forge/storage/kvs/v1/secret/get")
                 .headers(httpHeaders -> {
@@ -187,6 +188,6 @@ public class ConfluenceClient {
                 .bodyValue(Map.of("key", settingsKey))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<ConfluenceSettings>() { })
-                .block();
+                .cache();
     }
 }

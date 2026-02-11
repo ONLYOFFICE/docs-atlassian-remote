@@ -112,6 +112,6 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
                 confluenceContext.getCloudId(),
                 attachmentId,
                 xForgeTokenRepository.getXForgeToken(securityUtils.getCurrentXForgeUserTokenId(), XForgeTokenType.USER)
-        );
+        ).block();
     }
 }

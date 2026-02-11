@@ -110,7 +110,7 @@ public class RemoteReferenceDataController {
                         context.getCloudId(),
                         attachmentId,
                         xForgeUserToken
-                );
+                ).block();
             } catch (WebClientResponseException e) {
                 if (!HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
                     throw e;
@@ -126,7 +126,7 @@ public class RemoteReferenceDataController {
                     confluenceContentReference.getId(),
                     request.getPath(),
                     xForgeUserToken
-            ).getFirst();
+            ).block().getResults().getFirst();
         }
 
         if (!Objects.isNull(confluenceAttachment)) {

@@ -101,7 +101,7 @@ public class SettingsManagerImpl extends DefaultSettingsManager {
                                     securityUtils.getCurrentXForgeSystemTokenId(),
                                     XForgeTokenType.SYSTEM
                             )
-                    );
+                    ).block();
 
                     yield Optional.ofNullable(confluenceSettings.getValue().get(name))
                             .map(String::valueOf)
