@@ -57,7 +57,7 @@ public class EditorController {
         model.addAttribute("config", config);
         model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
 
-        model.addAttribute("sessionExpires", securityUtils.getSessionExpires());
+        model.addAttribute("sessionExpires", securityUtils.getSessionExpires().toEpochMilli());
         model.addAttribute("settings", Map.of("demo", settingsManager.isDemoActive()));
 
         return "editor";

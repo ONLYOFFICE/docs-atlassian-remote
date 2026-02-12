@@ -77,7 +77,7 @@ public class RemoteAuthorizationController {
         ).getTokenValue();
 
         return ResponseEntity.ok(
-                new AuthorizationResponse(baseUrl, token, securityUtils.getSessionExpires())
+                new AuthorizationResponse(baseUrl, token, securityUtils.getSessionExpires().toEpochMilli())
         );
     }
 }

@@ -36,18 +36,18 @@ document.addEventListener("DOMContentLoaded", function() {
             editor.destroyEditor();
         };
 
-        const startSession = () => {
-            const targetTime = new Date(sessionExpires);
+        const startSession = (endTime) => {
+            const targetTime = new Date(endTime);
             const now = new Date();
 
             const delay = targetTime.getTime() - now.getTime();
 
             if (delay > 0) {
                 sessionTimer = setTimeout(() => {
-                    events.emit("SESSION_EXPIRED");
+                    editor.denyEditingRights("Editing of this document has been stopped, because the current session has expired. Please, reload editor.");
                 }, delay);
             } else {
-                events.emit("SESSION_EXPIRED");
+                editor.denyEditingRights("Editing of this document has been stopped, because the current session has expired. Please, reload editor.");
             }
         };
 
@@ -55,40 +55,11 @@ document.addEventListener("DOMContentLoaded", function() {
             clearTimeout(sessionTimer);
         };
 
-        events.on("UPDATE_CONFIG", (data) => {
-            const {mode, token} = data;
-            const params = new URLSearchParams(
-                {
-                    format: "json",
-                    mode: mode,
-                    token: token
-                }
-            );
+        events.on("REFRESH_SESSION", (data) => {
+            const { sessionExpires } = data;
 
-            fetch(`${window.location.pathname}?${params.toString()}`, {
-                method: "GET",
-            }).then(async (response) => {
-                if (!response.ok) {
-                     events.emit("ERROR_UPDATE_CONFIG");
-                } else {
-                    const data = await response.json();
-                    const newConfig = data.config;
-
-                    newConfig.events = config.events;
-
-                    config = newConfig;
-                    sessionExpires = data.sessionExpires;
-
-                    events.emit("CONFIG_UPDATED");
-                }
-            });
-        });
-
-        events.on("RELOAD_EDITOR", () => {
             stopSession();
-            stopEditor();
-            startSession();
-            startEditor();
+            startSession(sessionExpires);
         });
 
         events.on("STOP_EDITING", (data) => {
@@ -110,7 +81,7 @@ document.addEventListener("DOMContentLoaded", function() {
               "c": c,
               "users": users,
             });
-        })
+        });
 
         const onDocumentReady = () => {
             events.emit("DOCUMENT_READY", {
@@ -139,7 +110,7 @@ document.addEventListener("DOMContentLoaded", function() {
             onRequestUsers: onRequestUsers
         };
 
-        startSession();
+        startSession(sessionExpires);
         startEditor();
 
     })(window.DocsAPI, window.config, window.events, window.sessionExpires, window.settings);
