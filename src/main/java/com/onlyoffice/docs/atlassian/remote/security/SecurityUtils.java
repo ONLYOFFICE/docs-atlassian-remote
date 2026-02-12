@@ -23,6 +23,7 @@ import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.FitContext;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
+import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.configuration.ForgeProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -31,6 +32,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
+import java.text.ParseException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,6 +44,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SecurityUtils {
     private final ForgeProperties forgeProperties;
+    private final XForgeTokenRepository xForgeTokenRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -131,6 +135,23 @@ public class SecurityUtils {
                 cloudId,
                 accountId
         );
+    }
+
+    public long getSessionExpires() throws ParseException {
+        Instant xForgeSystemTokenExpiration = xForgeTokenRepository.getXForgeTokenExpiration(
+                getCurrentXForgeSystemTokenId(),
+                XForgeTokenType.SYSTEM
+        ).minus(forgeProperties.getToken().getSystem().getRefreshThreshold());
+
+        Instant xForgeUserTokenExpiration = xForgeTokenRepository.getXForgeTokenExpiration(
+                getCurrentXForgeUserTokenId(),
+                XForgeTokenType.USER
+        ).minus(forgeProperties.getToken().getUser().getRefreshThreshold());
+
+        Instant minInstant = xForgeSystemTokenExpiration.compareTo(xForgeUserTokenExpiration) <= 0
+                ? xForgeSystemTokenExpiration : xForgeUserTokenExpiration;
+
+        return minInstant.toEpochMilli();
     }
 
     public Optional<Product> extractProduct(final Jwt jwt) {

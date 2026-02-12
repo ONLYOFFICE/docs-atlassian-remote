@@ -19,10 +19,7 @@
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
-import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
-import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
-import com.onlyoffice.docs.atlassian.remote.web.dto.editor.EditorResponse;
 import com.onlyoffice.manager.settings.SettingsManager;
 import com.onlyoffice.manager.url.UrlManager;
 import com.onlyoffice.model.documenteditor.Config;
@@ -30,8 +27,6 @@ import com.onlyoffice.model.documenteditor.config.document.Type;
 import com.onlyoffice.model.documenteditor.config.editorconfig.Mode;
 import com.onlyoffice.service.documenteditor.config.ConfigService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,8 +34,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.text.ParseException;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 
@@ -51,12 +44,7 @@ public class EditorController {
     private final ConfigService configService;
     private final SettingsManager settingsManager;
     private final UrlManager urlManager;
-    private final XForgeTokenRepository xForgeTokenRepository;
     private final SecurityUtils securityUtils;
-
-    @Value("${app.editor-session.time-until-expiration}")
-    private long editorSessionTimeUntilExpiration;
-
 
     @GetMapping(path = "/jira")
     public String editorJiraPage(
@@ -69,37 +57,9 @@ public class EditorController {
         model.addAttribute("config", config);
         model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
 
-        model.addAttribute("sessionExpires", getSessionExpires());
+        model.addAttribute("sessionExpires", securityUtils.getSessionExpires());
         model.addAttribute("settings", Map.of("demo", settingsManager.isDemoActive()));
 
         return "editor";
-    }
-
-    @GetMapping(path = "/jira", params = "format=json")
-    public ResponseEntity<EditorResponse> editorJiraData(final @RequestParam Mode mode) throws ParseException {
-        JiraContext jiraContext = (JiraContext) securityUtils.getCurrentAppContext();
-
-        Config config = configService.createConfig(jiraContext.getAttachmentId(), mode, Type.DESKTOP);
-
-        return ResponseEntity.ok(new EditorResponse(config, getSessionExpires()));
-    }
-
-    private long getSessionExpires() throws ParseException {
-        Instant xForgeSystemTokenExpiration = xForgeTokenRepository.getXForgeTokenExpiration(
-                securityUtils.getCurrentXForgeSystemTokenId(),
-                XForgeTokenType.SYSTEM
-        );
-
-        Instant xForgeUserTokenExpiration = xForgeTokenRepository.getXForgeTokenExpiration(
-                securityUtils.getCurrentXForgeUserTokenId(),
-                XForgeTokenType.USER
-        );
-
-        Instant minInstant = xForgeSystemTokenExpiration.compareTo(xForgeUserTokenExpiration) <= 0
-                ? xForgeSystemTokenExpiration : xForgeUserTokenExpiration;
-
-        minInstant =  minInstant.minus(editorSessionTimeUntilExpiration, ChronoUnit.MINUTES);
-
-        return minInstant.toEpochMilli();
     }
 }
