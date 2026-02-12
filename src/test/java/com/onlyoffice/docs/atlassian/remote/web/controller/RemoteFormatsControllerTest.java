@@ -51,6 +51,8 @@ public class RemoteFormatsControllerTest extends AbstractControllerTest {
                                         .claim("context", Map.of("cloudId", DataTest.testCloudId))
                                 )
                         )
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
