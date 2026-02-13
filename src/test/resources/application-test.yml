@@ -4,7 +4,7 @@ app:
     secret: f66eb0b035fddd3752220e4affc7d01f
     ttl:
       default: 5
-      callback: 240
+      callback: 10080
 
 forge:
   products:
