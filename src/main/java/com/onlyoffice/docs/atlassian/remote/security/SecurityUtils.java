@@ -141,7 +141,7 @@ public class SecurityUtils {
         );
     }
 
-    public long getSessionExpires() throws ParseException {
+    public Instant getSessionExpires() throws ParseException {
         Instant xForgeSystemTokenExpiration = xForgeTokenRepository.getXForgeTokenExpiration(
                 getCurrentXForgeSystemTokenId(),
                 XForgeTokenType.SYSTEM
@@ -152,10 +152,8 @@ public class SecurityUtils {
                 XForgeTokenType.USER
         ).minus(forgeProperties.getToken().getUser().getRefreshThreshold());
 
-        Instant minInstant = xForgeSystemTokenExpiration.compareTo(xForgeUserTokenExpiration) <= 0
+        return xForgeSystemTokenExpiration.compareTo(xForgeUserTokenExpiration) <= 0
                 ? xForgeSystemTokenExpiration : xForgeUserTokenExpiration;
-
-        return minInstant.toEpochMilli();
     }
 
     public Optional<Product> extractProduct(final Jwt jwt) {

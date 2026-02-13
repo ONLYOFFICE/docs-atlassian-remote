@@ -29,4 +29,5 @@ import lombok.NoArgsConstructor;
 public class AuthorizationResponse {
     private String remoteAppUrl;
     private String token;
+    private long sessionExpires;
 }
