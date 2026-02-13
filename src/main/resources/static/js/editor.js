@@ -46,10 +46,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
             if (delay > 0) {
                 sessionTimer = setTimeout(() => {
-                    editor.denyEditingRights("Editing of this document has been stopped, because the current session has expired. Please, reload editor.");
+                    editor.denyEditingRights("Editing of this document has been stopped because the current session has expired. Please reload the editor.");
                 }, delay);
             } else {
-                editor.denyEditingRights("Editing of this document has been stopped, because the current session has expired. Please, reload editor.");
+                editor.denyEditingRights("Editing of this document has been stopped because the current session has expired. Please reload the editor.");
             }
         };
 

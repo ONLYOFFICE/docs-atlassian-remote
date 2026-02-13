@@ -4,7 +4,7 @@ app:
     secret: ${APP_SECRET_KEY}
     ttl:
       default: 5
-      callback: 240
+      callback: 10080
 
 forge:
   products:

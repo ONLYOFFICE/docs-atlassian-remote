@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +35,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -217,6 +220,11 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
                 "entityId"
         );
 
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.USER)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+
         mockMvc.perform(post(REQUEST_MAPPING)
                         .with(SecurityMockMvcRequestPostProcessors.jwt()
                                 .jwt(jwt -> jwt
@@ -243,6 +251,11 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
                 "parentId",
                 "entityId"
         );
+
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.USER)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
 
         mockMvc.perform(post(REQUEST_MAPPING)
                         .with(SecurityMockMvcRequestPostProcessors.jwt()
