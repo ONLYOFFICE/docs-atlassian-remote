@@ -1,6 +1,6 @@
 # Changelog
 
-## 
+## 1.1.0
 ## Added
 - Session expiration tracking (`sessionExpires`) in authorization response
 - Token expiration validation with refresh-threshold in XForgeTokenInterceptor
