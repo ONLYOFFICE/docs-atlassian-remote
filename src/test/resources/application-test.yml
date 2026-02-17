@@ -4,14 +4,19 @@ app:
     secret: f66eb0b035fddd3752220e4affc7d01f
     ttl:
       default: 5
-      callback: 240
-  editor-session:
-    time-until-expiration: 15
+      callback: 10080
 
 forge:
   products:
     JIRA:
       appId: ari:cloud:ecosystem::app/d818e8a8-a333-4782-9f97-fa753b4a6a37
+  token:
+    system:
+      header: x-forge-oauth-system
+      refresh-threshold: 30s
+    user:
+      header: x-forge-oauth-user
+      refresh-threshold: 30s
 
 spring:
   security:

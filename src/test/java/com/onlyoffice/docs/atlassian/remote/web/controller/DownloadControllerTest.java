@@ -33,6 +33,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.testcontainers.shaded.com.fasterxml.jackson.core.type.TypeReference;
+import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -87,7 +88,7 @@ public class DownloadControllerTest extends AbstractControllerTest {
                 any(),
                 any()
         )).thenReturn(
-                DataTest.Settings.CORRECT_SETTINGS
+                Mono.just(DataTest.Settings.CORRECT_SETTINGS)
         );
 
         mockMvc.perform(get(JIRA_DOWNLOAD_PATH)
@@ -123,7 +124,7 @@ public class DownloadControllerTest extends AbstractControllerTest {
                 any(),
                 any()
         )).thenReturn(
-                DataTest.Settings.CORRECT_SETTINGS
+                Mono.just(DataTest.Settings.CORRECT_SETTINGS)
         );
 
         when(jiraClient.getAttachmentData(

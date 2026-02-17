@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +35,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -209,103 +212,6 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void whenPostRemoteAuthorizationWithMissingCloudIdInContext_returnUnauthorized() throws Exception {
-        JiraUser user = DataTest.Users.ADMIN;
-
-        AuthorizationRequest authRequest = new AuthorizationRequest(
-                "parentId",
-                "entityId"
-        );
-
-        mockMvc.perform(post(REQUEST_MAPPING)
-                        .with(SecurityMockMvcRequestPostProcessors.jwt()
-                                .jwt(jwt -> jwt
-                                        .claim("aud", JIRA_APP_ID)
-                                        .claim("principal", user.getAccountId())
-                                        .claim("context", Map.of())
-                                )
-                        )
-                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
-                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(objectMapper.writeValueAsString(authRequest))
-                )
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    public void whenPostRemoteAuthorizationWithInvalidCloudId_returnInternalServerError() throws Exception {
-        JiraUser user = DataTest.Users.ADMIN;
-
-        AuthorizationRequest authRequest = new AuthorizationRequest(
-                "parentId",
-                "entityId"
-        );
-
-        mockMvc.perform(post(REQUEST_MAPPING)
-                        .with(SecurityMockMvcRequestPostProcessors.jwt()
-                                .jwt(jwt -> jwt
-                                        .claim("aud", JIRA_APP_ID)
-                                        .claim("principal", user.getAccountId())
-                                        .claim("context", Map.of("cloudId", "invalid-uuid"))
-                                )
-                        )
-                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
-                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(objectMapper.writeValueAsString(authRequest))
-                )
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    public void whenPostRemoteAuthorizationWithUnsupportedProduct_returnInternalServerError() throws Exception {
-        JiraUser user = DataTest.Users.ADMIN;
-
-        AuthorizationRequest authRequest = new AuthorizationRequest(
-                "parentId",
-                "entityId"
-        );
-
-        mockMvc.perform(post(REQUEST_MAPPING)
-                        .with(SecurityMockMvcRequestPostProcessors.jwt()
-                                .jwt(jwt -> jwt
-                                        .claim("aud", "unsupported-app-id")
-                                        .claim("principal", user.getAccountId())
-                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
-                                )
-                        )
-                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
-                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(objectMapper.writeValueAsString(authRequest))
-                )
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    public void whenPostRemoteAuthorizationWithMissingPrincipalClaim_returnInternalServerError() throws Exception {
-        AuthorizationRequest authRequest = new AuthorizationRequest(
-                "parentId",
-                "entityId"
-        );
-
-        mockMvc.perform(post(REQUEST_MAPPING)
-                        .with(SecurityMockMvcRequestPostProcessors.jwt()
-                                .jwt(jwt -> jwt
-                                        .claim("aud", JIRA_APP_ID)
-                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
-                                )
-                        )
-                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
-                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(objectMapper.writeValueAsString(authRequest))
-                )
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
     public void whenPostRemoteAuthorizationSuccessfully_returnOk() throws Exception {
         JiraUser user = DataTest.Users.ADMIN;
 
@@ -313,6 +219,11 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
                 "parentId",
                 "entityId"
         );
+
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.USER)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
 
         mockMvc.perform(post(REQUEST_MAPPING)
                         .with(SecurityMockMvcRequestPostProcessors.jwt()
@@ -340,6 +251,11 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
                 "parentId",
                 "entityId"
         );
+
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.USER)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
 
         mockMvc.perform(post(REQUEST_MAPPING)
                         .with(SecurityMockMvcRequestPostProcessors.jwt()

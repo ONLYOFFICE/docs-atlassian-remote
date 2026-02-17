@@ -34,6 +34,7 @@ import java.util.Map;
 @Component
 public class UrlManagerImpl extends DefaultUrlManager {
     private final RemoteAppJwtService remoteAppJwtService;
+    private final SecurityUtils securityUtils;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -44,19 +45,21 @@ public class UrlManagerImpl extends DefaultUrlManager {
     @Value("${app.security.ttl.callback}")
     private long ttlCallback;
 
-    public UrlManagerImpl(final SettingsManager settingsManager, final RemoteAppJwtService remoteAppJwtService) {
+    public UrlManagerImpl(final SettingsManager settingsManager, final RemoteAppJwtService remoteAppJwtService,
+                          final SecurityUtils securityUtils) {
         super(settingsManager);
 
         this.remoteAppJwtService = remoteAppJwtService;
+        this.securityUtils = securityUtils;
     }
 
     @Override
     public String getFileUrl(final String fileId) {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
         String path = "/api/v1/download/" + context.getProduct().toString().toLowerCase();
 
         String token = remoteAppJwtService.encode(
-                SecurityUtils.getCurrentPrincipal().getSubject(),
+                securityUtils.getCurrentAccountId(),
                 path,
                 ttlDefault,
                 objectMapper.convertValue(context, new TypeReference<Map<String, Object>>() { })
@@ -67,11 +70,11 @@ public class UrlManagerImpl extends DefaultUrlManager {
 
     @Override
     public String getCallbackUrl(final String fileId) {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
         String path = "/api/v1/callback/" + context.getProduct().toString().toLowerCase();
 
         String token = remoteAppJwtService.encode(
-                SecurityUtils.getCurrentPrincipal().getSubject(),
+                securityUtils.getCurrentAccountId(),
                 path,
                 ttlCallback,
                 objectMapper.convertValue(context, new TypeReference<Map<String, Object>>() { })

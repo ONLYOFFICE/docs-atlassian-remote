@@ -16,32 +16,23 @@
  *
  */
 
+
 package com.onlyoffice.docs.atlassian.remote.configuration;
 
-import com.onlyoffice.docs.atlassian.remote.web.resolver.AccountIdArgumentResolver;
-import com.onlyoffice.docs.atlassian.remote.web.resolver.FitContextArgumentResolver;
-import com.onlyoffice.docs.atlassian.remote.web.resolver.ProductArgumentResolver;
+import com.onlyoffice.docs.atlassian.remote.web.interceptor.XForgeTokenInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-import java.util.List;
-
 
 @Configuration
 @RequiredArgsConstructor
 public class WebConfiguration implements WebMvcConfigurer {
-    private final FitContextArgumentResolver fitContextArgumentResolver;
-    private final ProductArgumentResolver productArgumentResolver;
-    private final AccountIdArgumentResolver accountIdArgumentResolver;
+    private final XForgeTokenInterceptor xForgeTokenInterceptor;
 
     @Override
-    public void addArgumentResolvers(final List<HandlerMethodArgumentResolver> resolvers) {
-        resolvers.addAll(List.of(
-                fitContextArgumentResolver,
-                productArgumentResolver,
-                accountIdArgumentResolver
-        ));
+    public void addInterceptors(final InterceptorRegistry registry) {
+        registry.addInterceptor(xForgeTokenInterceptor)
+                .addPathPatterns("/api/v1/remote/**");
     }
 }

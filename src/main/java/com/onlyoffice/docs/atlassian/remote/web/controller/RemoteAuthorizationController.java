@@ -20,17 +20,10 @@ package com.onlyoffice.docs.atlassian.remote.web.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.onlyoffice.docs.atlassian.remote.aop.CurrentAccountId;
-import com.onlyoffice.docs.atlassian.remote.aop.CurrentFitContext;
-import com.onlyoffice.docs.atlassian.remote.aop.CurrentProduct;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
-import com.onlyoffice.docs.atlassian.remote.api.FitContext;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
-import com.onlyoffice.docs.atlassian.remote.api.Product;
-import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.security.RemoteAppJwtService;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
-import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
 import com.onlyoffice.docs.atlassian.remote.web.dto.authorization.AuthorizationRequest;
 import com.onlyoffice.docs.atlassian.remote.web.dto.authorization.AuthorizationResponse;
 import jakarta.validation.Valid;
@@ -39,7 +32,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -57,56 +49,35 @@ public class RemoteAuthorizationController {
     private long ttlDefault;
 
     private final RemoteAppJwtService remoteAppJwtService;
-    private final XForgeTokenRepository xForgeTokenRepository;
+    private final SecurityUtils securityUtils;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @PostMapping
     public ResponseEntity<AuthorizationResponse> getAuthorization(
-            final @CurrentFitContext FitContext fitContext,
-            final @CurrentProduct Product product,
-            final @CurrentAccountId String accountId,
-            final @RequestHeader("x-forge-oauth-system") String xForgeSystemToken,
-            final @RequestHeader("x-forge-oauth-user") String xForgeUserToken,
             final @Valid @RequestBody AuthorizationRequest request
     ) throws ParseException {
-        Context remoteAppTokenContext = switch (product) {
+        Context context = securityUtils.getCurrentAppContext();
+
+        Context remoteAppTokenContext = switch (context.getProduct()) {
             case JIRA -> JiraContext.builder()
-                    .product(product)
-                    .cloudId(fitContext.cloudId())
+                    .product(context.getProduct())
+                    .cloudId(context.getCloudId())
                     .issueId(request.getParentId())
                     .attachmentId(request.getEntityId())
                     .build();
             default -> throw new UnsupportedOperationException();
         };
 
-        xForgeTokenRepository.saveXForgeToken(
-                SecurityUtils.createXForgeSystemTokenId(
-                        remoteAppTokenContext.getProduct(),
-                        remoteAppTokenContext.getCloudId()
-                ),
-                xForgeSystemToken,
-                XForgeTokenType.SYSTEM
-        );
-        xForgeTokenRepository.saveXForgeToken(
-                SecurityUtils.createXForgeUserTokenId(
-                        remoteAppTokenContext.getProduct(),
-                        remoteAppTokenContext.getCloudId(),
-                        accountId
-                ),
-                xForgeUserToken,
-                XForgeTokenType.USER
-        );
-
         String token = remoteAppJwtService.encode(
-                accountId,
-                "/editor/" + product.toString().toLowerCase(),
+                securityUtils.getCurrentAccountId(),
+                "/editor/" + context.getProduct().toString().toLowerCase(),
                 ttlDefault,
                 objectMapper.convertValue(remoteAppTokenContext, new TypeReference<Map<String, Object>>() { })
         ).getTokenValue();
 
         return ResponseEntity.ok(
-                new AuthorizationResponse(baseUrl, token)
+                new AuthorizationResponse(baseUrl, token, securityUtils.getSessionExpires().toEpochMilli())
         );
     }
 }

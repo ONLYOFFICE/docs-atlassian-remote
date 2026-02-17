@@ -24,6 +24,7 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
@@ -35,6 +36,7 @@ import java.util.Objects;
 @Setter
 public class ForgeProperties {
     private Map<Product, ProductConfig> products = new EnumMap<>(Product.class);
+    private TokenConfig token;
 
     public Product getProductByAppId(final String appId) {
         if (Objects.isNull(appId)) {
@@ -53,6 +55,19 @@ public class ForgeProperties {
     @Getter
     public static class ProductConfig {
         private String appId;
+    }
 
+    @Setter
+    @Getter
+    public static class TokenConfig {
+        private TokenTypeConfig system;
+        private TokenTypeConfig user;
+    }
+
+    @Setter
+    @Getter
+    public static class TokenTypeConfig {
+        private String header;
+        private Duration refreshThreshold;
     }
 }

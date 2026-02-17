@@ -18,6 +18,7 @@
 
 package com.onlyoffice.docs.atlassian.remote.sdk.service;
 
+import com.onlyoffice.docs.atlassian.remote.Constants;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
@@ -34,6 +35,7 @@ import com.onlyoffice.manager.security.JwtManager;
 import com.onlyoffice.manager.settings.SettingsManager;
 import com.onlyoffice.manager.url.UrlManager;
 import com.onlyoffice.model.common.User;
+import com.onlyoffice.model.documenteditor.Config;
 import com.onlyoffice.model.documenteditor.config.EditorConfig;
 import com.onlyoffice.model.documenteditor.config.document.Permissions;
 import com.onlyoffice.model.documenteditor.config.document.Type;
@@ -42,41 +44,61 @@ import com.onlyoffice.model.documenteditor.config.editorconfig.Mode;
 import com.onlyoffice.model.documenteditor.config.editorconfig.customization.Close;
 import com.onlyoffice.service.documenteditor.config.DefaultConfigService;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 
 
 @Component
 public class ConfigServiceImpl extends DefaultConfigService {
     private final JiraClient jiraClient;
     private final XForgeTokenRepository xForgeTokenRepository;
+    private final SecurityUtils securityUtils;
 
     public ConfigServiceImpl(final DocumentManager documentManager,
                              final UrlManager urlManager,
                              final JwtManager jwtManager,
                              final SettingsManager settingsManager, final JiraClient jiraClient,
-                             final XForgeTokenRepository xForgeTokenRepository) {
+                             final XForgeTokenRepository xForgeTokenRepository,
+                             final SecurityUtils securityUtils) {
         super(documentManager, urlManager, jwtManager, settingsManager);
 
         this.xForgeTokenRepository = xForgeTokenRepository;
         this.jiraClient = jiraClient;
+        this.securityUtils = securityUtils;
+    }
+
+    @Override
+    public Config createConfig(final String fileId, final Mode mode, final Type type) {
+        Context context = securityUtils.getCurrentAppContext();
+
+        switch (context.getProduct()) {
+            case JIRA:
+                preloadJiraResources(context.getCloudId(), ((JiraContext) context).getIssueId(), fileId);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        }
+
+        return super.createConfig(fileId, mode, type);
     }
 
     @Override
     public EditorConfig getEditorConfig(final String fileId, final Mode mode, final Type type) {
         EditorConfig editorConfig = super.getEditorConfig(fileId, mode, type);
 
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
 
         switch (context.getProduct()) {
             case JIRA:
                 JiraUser user = jiraClient.getUser(
-                        context.getCloudId().toString(),
+                        context.getCloudId(),
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
-                );
+                ).block();
 
                 editorConfig.setLang(user.getLocale());
 
@@ -88,7 +110,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
 
     @Override
     public Permissions getPermissions(final String fileId) {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
 
         switch (context.getProduct()) {
             case JIRA:
@@ -98,10 +120,10 @@ public class ConfigServiceImpl extends DefaultConfigService {
                         jiraContext.getCloudId(),
                         fileId,
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
-                );
+                ).block();
 
                 JiraPermissions jiraPermissions = jiraClient.getIssuePermissions(
                         jiraContext.getCloudId(),
@@ -112,10 +134,10 @@ public class ConfigServiceImpl extends DefaultConfigService {
                                 JiraPermissionsKey.DELETE_ALL_ATTACHMENTS
                         ),
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
-                );
+                ).block();
 
                 JiraPermission createAttachments = jiraPermissions.getPermissions()
                         .get(JiraPermissionsKey.CREATE_ATTACHMENTS);
@@ -123,7 +145,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 JiraPermission deleteAttachments;
 
                 if (jiraAttachment.getAuthor().getAccountId()
-                        .equals(SecurityUtils.getCurrentPrincipal().getSubject())) {
+                        .equals(securityUtils.getCurrentAccountId())) {
                     deleteAttachments = jiraPermissions.getPermissions()
                             .get(JiraPermissionsKey.DELETE_OWN_ATTACHMENTS);
                 } else {
@@ -154,17 +176,17 @@ public class ConfigServiceImpl extends DefaultConfigService {
 
     @Override
     public User getUser() {
-        Context context = SecurityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
 
         switch (context.getProduct()) {
             case JIRA:
                 JiraUser user = jiraClient.getUser(
-                        context.getCloudId().toString(),
+                        context.getCloudId(),
                         xForgeTokenRepository.getXForgeToken(
-                                SecurityUtils.getCurrentXForgeUserTokenId(),
+                                securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
                         )
-                );
+                ).block();
 
                 return User.builder()
                         .id(user.getAccountId())
@@ -174,5 +196,32 @@ public class ConfigServiceImpl extends DefaultConfigService {
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
+    }
+
+    private void preloadJiraResources(final UUID cloudId, final String issueId, final String attachmentId) {
+        String xForgeUserToken = xForgeTokenRepository.getXForgeToken(
+                securityUtils.getCurrentXForgeUserTokenId(),
+                XForgeTokenType.USER
+        );
+        String xForgeSystemToken = xForgeTokenRepository.getXForgeToken(
+                securityUtils.getCurrentXForgeSystemTokenId(),
+                XForgeTokenType.SYSTEM
+        );
+
+        Mono.zip(
+                jiraClient.getUser(cloudId, xForgeUserToken),
+                jiraClient.getAttachment(cloudId, attachmentId, xForgeUserToken),
+                jiraClient.getIssuePermissions(
+                        cloudId,
+                        issueId,
+                        List.of(
+                                JiraPermissionsKey.CREATE_ATTACHMENTS,
+                                JiraPermissionsKey.DELETE_OWN_ATTACHMENTS,
+                                JiraPermissionsKey.DELETE_ALL_ATTACHMENTS
+                        ),
+                        xForgeUserToken
+                ),
+                jiraClient.getSettings(Constants.SETTINGS_KEY, xForgeSystemToken)
+        ).block();
     }
 }

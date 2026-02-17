@@ -42,13 +42,14 @@ import java.util.Optional;
 public class CallbackController {
     private final SettingsManager settingsManager;
     private final CallbackService callbackService;
+    private final SecurityUtils securityUtils;
 
     @PostMapping("jira")
     public ResponseEntity<Map<String, Object>> callbackJira(
             final @RequestHeader Map<String, String> headers,
             final @RequestBody Callback callback
     ) throws Exception {
-        JiraContext jiraContext = (JiraContext) SecurityUtils.getCurrentAppContext();
+        JiraContext jiraContext = (JiraContext) securityUtils.getCurrentAppContext();
 
 
         String authorizationHeader = Optional.ofNullable(headers.get(settingsManager.getSecurityHeader()))

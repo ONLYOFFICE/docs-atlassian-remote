@@ -47,7 +47,7 @@ public class JiraClient {
     private final WebClient atlassianWebClient;
 
     @RequestCacheable
-    public JiraUser getUser(final String cloudId, final String token) {
+    public Mono<JiraUser> getUser(final UUID cloudId, final String token) {
         return atlassianWebClient.get()
                 .uri("/ex/jira/{cloudId}/rest/api/3/myself", cloudId)
                 .headers(httpHeaders -> {
@@ -55,11 +55,11 @@ public class JiraClient {
                 })
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<JiraUser>() { })
-                .block();
+                .cache();
     }
 
     @RequestCacheable
-    public JiraAttachment getAttachment(final UUID cloudId, final String attachmentId, final String token) {
+    public Mono<JiraAttachment> getAttachment(final UUID cloudId, final String attachmentId, final String token) {
         return atlassianWebClient.get()
                 .uri("/ex/jira/{cloudId}/rest/api/3/attachment/{attachmentId}", cloudId, attachmentId)
                 .headers(httpHeaders -> {
@@ -67,7 +67,7 @@ public class JiraClient {
                 })
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<JiraAttachment>() { })
-                .block();
+                .cache();
     }
 
     public ClientResponse getAttachmentData(final String cloudId, final String attachmentId, final String token) {
@@ -111,7 +111,7 @@ public class JiraClient {
     }
 
     @RequestCacheable
-    public JiraPermissions getIssuePermissions(final UUID cloudId, final String issueId,
+    public Mono<JiraPermissions> getIssuePermissions(final UUID cloudId, final String issueId,
                                                final List<JiraPermissionsKey> permissions, final String token) {
         return atlassianWebClient.get()
                 .uri(uriBuilder -> uriBuilder
@@ -125,11 +125,11 @@ public class JiraClient {
                 })
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<JiraPermissions>() { })
-                .block();
+                .cache();
     }
 
     @RequestCacheable
-    public JiraSettings getSettings(final String settingsKey, final String token) {
+    public Mono<JiraSettings> getSettings(final String settingsKey, final String token) {
         return atlassianWebClient.post()
                 .uri("/forge/storage/kvs/v1/secret/get")
                 .headers(httpHeaders -> {
@@ -138,6 +138,6 @@ public class JiraClient {
                 .bodyValue(Map.of("key", settingsKey))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<JiraSettings>() { })
-                .block();
+                .cache();
     }
 }
