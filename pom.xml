@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.onlyoffice</groupId>
     <artifactId>docs-atlassian-remote</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1-SNAPSHOT</version>
     <name>docs-atlassian-remote</name>
     <description>ONLYOFFICE Docs integration remote service with Atlassian</description>
     <url>https://github.com/ONLYOFFICE/docs-atlassian-remote</url>
