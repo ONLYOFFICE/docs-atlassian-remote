@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         let editor;
+        let connector;
         let sessionTimer;
 
         const startEditor = () => {
@@ -55,6 +56,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const stopSession = () => {
             clearTimeout(sessionTimer);
+        };
+
+        const getOrCreateConnector = () => {
+            if (!connector) {
+                connector = editor.createConnector();
+            };
+
+            return connector;
         };
 
         events.on("REFRESH_SESSION", (data) => {
@@ -87,6 +96,37 @@ document.addEventListener("DOMContentLoaded", function() {
 
         events.on("SET_REFERENCE_DATA", (data) => {
             editor.setReferenceData(data);
+        });
+
+        events.on("INIT_AI_PROVIDER", (data) => {
+            console.log("[ONLYOFFICE] INIT_AI_PROVIDER", data);
+            const { providerName, settings } = data;
+
+            const connector = getOrCreateConnector();
+
+            const initAIProvider = (providerName, settings) => {
+                connector.sendEvent("ai_onCustomProviders", [{ name: providerName }]);
+                connector.sendEvent("ai_onCustomInit", settings);
+            }
+
+            connector.executeMethod("AI", [{ type: "Actions" }], (data) => {
+                if (data && typeof data === "object" && "error" in data && data.error) {
+                    connector.attachEvent("ai_onInit", () => {
+                        initAIProvider(providerName, settings);
+                    });
+                } else {
+                    initAIProvider(providerName, settings);
+                }
+            });
+
+            connector.attachEvent("ai_onExternalFetch", (e) => {
+                events.emit("AI_FETCH", e);
+            });
+        });
+
+        events.on("AI_FETCH_RESPONSE", (data) => {
+            console.log("[ONLYOFFICE] AI_FETCH_RESPONSE", data);
+            connector.sendEvent("ai_onExternalFetch", data);
         });
 
         const onDocumentReady = () => {
