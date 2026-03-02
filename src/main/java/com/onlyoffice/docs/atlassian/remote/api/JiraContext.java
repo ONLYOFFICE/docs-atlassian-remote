@@ -41,7 +41,7 @@ public class JiraContext extends Context {
     public JiraContext(
             final @NonNull @JsonProperty("product") Product product,
             final @NonNull @JsonProperty("cloudId") UUID cloudId,
-            final @NonNull @JsonProperty("environmentId") UUID environmentId,
+            final @JsonProperty("environmentId") UUID environmentId,
             final @NonNull @JsonProperty("issueId") String issueId,
             final @NonNull @JsonProperty("attachmentId") String attachmentId
     ) {

@@ -38,7 +38,7 @@ public class Context {
     public Context(
             final @NonNull @JsonProperty("product") Product product,
             final @NonNull @JsonProperty("cloudId") UUID cloudId,
-            final @NonNull @JsonProperty("environmentId") UUID environmentId
+            final @JsonProperty("environmentId") UUID environmentId
     ) {
         this.product = product;
         this.cloudId = cloudId;
