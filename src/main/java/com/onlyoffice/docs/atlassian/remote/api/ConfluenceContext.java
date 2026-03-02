@@ -31,23 +31,23 @@ import java.util.UUID;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
-public class JiraContext extends Context {
+public class ConfluenceContext extends Context {
     @NonNull
-    private String issueId;
+    private String parentId;
     @NonNull
     private String attachmentId;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public JiraContext(
+    public ConfluenceContext(
             final @NonNull @JsonProperty("product") Product product,
             final @NonNull @JsonProperty("cloudId") UUID cloudId,
-            final @JsonProperty("environmentId") UUID environmentId,
-            final @NonNull @JsonProperty("issueId") String issueId,
+            final @NonNull @JsonProperty("environmentId") UUID environmentId,
+            final @NonNull @JsonProperty("parentId") String parentId,
             final @NonNull @JsonProperty("attachmentId") String attachmentId
     ) {
         super(product, cloudId, environmentId);
 
-        this.issueId = issueId;
+        this.parentId = parentId;
         this.attachmentId = attachmentId;
     }
 }

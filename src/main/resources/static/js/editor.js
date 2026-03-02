@@ -22,7 +22,9 @@ document.addEventListener("DOMContentLoaded", function() {
             events.emit("DOCS_API_UNDEFINED");
             return;
         } else {
-            events.emit("PAGE_IS_LOADED");
+            events.emit("PAGE_IS_LOADED", {
+                config
+            });
         }
 
         let editor;
@@ -83,14 +85,24 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         });
 
+        events.on("SET_REFERENCE_DATA", (data) => {
+            editor.setReferenceData(data);
+        });
+
         const onDocumentReady = () => {
             events.emit("DOCUMENT_READY", {
                 demo: settings.demo
             });
         }
 
-        const onRequestClose = () => {
-           events.emit("REQUEST_CLOSE");
+        const onRequestClose = (event) => {
+            events.emit("REQUEST_CLOSE", {
+                url: config.editorConfig.customization.goback.url
+            });
+        }
+
+        const onRequestOpen = (event) => {
+            events.emit("REQUEST_OPEN", event.data);
         }
 
         const onRequestUsers = function(event) {
@@ -104,10 +116,16 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         };
 
+        const onRequestReferenceData = function(event) {
+            events.emit("REQUEST_REFERENCE_DATA", event.data);
+        }
+
         config.events = {
             onDocumentReady: onDocumentReady,
             onRequestClose: onRequestClose,
-            onRequestUsers: onRequestUsers
+            onRequestOpen: onRequestOpen,
+            onRequestUsers: onRequestUsers,
+            onRequestReferenceData: onRequestReferenceData
         };
 
         startSession(sessionExpires);

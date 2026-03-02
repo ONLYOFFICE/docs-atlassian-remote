@@ -46,8 +46,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/remote/settings")
 public class RemoteSettingsController {
-    private final SecurityUtils securityUtils;
     private final DemoServerConnectionService demoServerConnectionService;
+    private final SecurityUtils securityUtils;
 
     @GetMapping
     public ResponseEntity<SettingsResponse> getSettings() throws ParseException {

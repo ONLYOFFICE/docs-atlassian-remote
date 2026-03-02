@@ -18,10 +18,28 @@
 
 package com.onlyoffice.docs.atlassian.remote.api;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-import java.util.UUID;
+import java.util.Objects;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public record FitContext(UUID cloudId, UUID environmentId) {
+
+@AllArgsConstructor
+@Getter
+public class ConfluenceContentReference {
+    private String id;
+    private String contentType;
+
+    public static ConfluenceContentReference parse(final String value) {
+        if (Objects.isNull(value) || value.isEmpty()) {
+            return new ConfluenceContentReference(null, null);
+        }
+
+        String[] parts = value.split(":", 2);
+
+        String contentType = parts.length > 0 ? parts[0] : null;
+        String id = parts.length > 1 ? parts[1] : null;
+
+        return new ConfluenceContentReference(id, contentType);
+    }
 }

@@ -19,18 +19,22 @@
 package com.onlyoffice.docs.atlassian.remote.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.FitContext;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.configuration.ForgeProperties;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.text.ParseException;
 import java.time.Instant;
@@ -43,6 +47,12 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class SecurityUtils {
+    /** HTTP header name for the Atlassian cloud identifier. */
+    public static final String CLOUD_ID_HEADER = "x-cloud-id";
+
+    /** HTTP header name for the Forge environment identifier. */
+    public static final String ENVIRONMENT_ID_HEADER = "x-environment-id";
+
     private final ForgeProperties forgeProperties;
     private final XForgeTokenRepository xForgeTokenRepository;
 
@@ -87,9 +97,24 @@ public class SecurityUtils {
         if (Objects.nonNull(product)) {
             FitContext fitContext = objectMapper.convertValue(contextAsMap, FitContext.class);
 
+            UUID cloudId = fitContext.cloudId();
+            UUID environmentId = fitContext.environmentId();
+
+            if (Objects.isNull(cloudId) || Objects.isNull(environmentId)) {
+                HttpServletRequest request = ((ServletRequestAttributes)
+                        RequestContextHolder.currentRequestAttributes()).getRequest();
+                if (Objects.isNull(cloudId)) {
+                    cloudId = parseUuidHeader(request, CLOUD_ID_HEADER);
+                }
+                if (Objects.isNull(environmentId)) {
+                    environmentId = parseUuidHeader(request, ENVIRONMENT_ID_HEADER);
+                }
+            }
+
             return Context.builder()
                     .product(product)
-                    .cloudId(fitContext.cloudId())
+                    .cloudId(cloudId)
+                    .environmentId(environmentId)
                     .build();
         }
 
@@ -102,6 +127,8 @@ public class SecurityUtils {
         switch (Product.valueOf(productFromContext)) {
             case JIRA:
                 return (Context) objectMapper.convertValue(contextAsMap, JiraContext.class);
+            case CONFLUENCE:
+                return (Context) objectMapper.convertValue(contextAsMap, ConfluenceContext.class);
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + productFromContext);
         }
@@ -159,5 +186,17 @@ public class SecurityUtils {
         }
 
         return Optional.ofNullable(forgeProperties.getProductByAppId(audience.get(0)));
+    }
+
+    private UUID parseUuidHeader(final HttpServletRequest request, final String headerName) {
+        String value = request.getHeader(headerName);
+        if (Objects.isNull(value) || value.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }

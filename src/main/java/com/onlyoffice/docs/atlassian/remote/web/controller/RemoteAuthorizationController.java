@@ -20,6 +20,7 @@ package com.onlyoffice.docs.atlassian.remote.web.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.security.RemoteAppJwtService;
@@ -63,10 +64,18 @@ public class RemoteAuthorizationController {
             case JIRA -> JiraContext.builder()
                     .product(context.getProduct())
                     .cloudId(context.getCloudId())
+                    .environmentId(context.getEnvironmentId())
                     .issueId(request.getParentId())
                     .attachmentId(request.getEntityId())
                     .build();
-            default -> throw new UnsupportedOperationException();
+            case CONFLUENCE -> ConfluenceContext.builder()
+                    .product(context.getProduct())
+                    .cloudId(context.getCloudId())
+                    .environmentId(context.getEnvironmentId())
+                    .parentId(request.getParentId())
+                    .attachmentId(request.getEntityId())
+                    .build();
+            default ->  throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         };
 
         String token = remoteAppJwtService.encode(

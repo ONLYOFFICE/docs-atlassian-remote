@@ -16,12 +16,20 @@
  *
  */
 
-package com.onlyoffice.docs.atlassian.remote;
+package com.onlyoffice.docs.atlassian.remote.client.confluence.dto;
 
+import lombok.Builder;
+import lombok.Data;
 
-public final class Constants {
-    private Constants() { }
+import java.util.Map;
 
-    public static final String SETTINGS_KEY = "onlyoffice-docs.settings";
-    public static final String APP_ID_PREFIX = "ari:cloud:ecosystem::app/";
+@Builder
+@Data
+public class ConfluenceAttachment {
+    private String id;
+    private String title;
+    private Map<String, Object> operations;
+    private ConfluenceAttachmentVersion version;
+    private String pageId;
+    private String blogPostId;
 }

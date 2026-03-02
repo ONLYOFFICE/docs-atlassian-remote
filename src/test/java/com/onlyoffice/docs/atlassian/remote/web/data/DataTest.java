@@ -37,6 +37,7 @@ public final class DataTest {
     }
 
     public static UUID testCloudId = UUID.fromString("c0201358-a0eb-41ea-84a0-d15d3221dc23");
+    public static UUID testEnvironmentId = UUID.fromString("a0430815-cfef-44e4-9bb7-0ceafcdebe7f");
     public static String testXForgeOAuthUserToken = "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiL"
         + "CJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6NDEyNDI0Nzg0NywiaWF0IjoxNzU3NDkyNjQ3fQ.bnQNpHlPdrMS3jdEjR-k-HMeg3J3ss"
         + "XUGu7RPZH8Ha8";

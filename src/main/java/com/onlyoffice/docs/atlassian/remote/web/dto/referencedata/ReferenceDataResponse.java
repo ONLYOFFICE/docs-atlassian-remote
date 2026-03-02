@@ -16,12 +16,24 @@
  *
  */
 
-package com.onlyoffice.docs.atlassian.remote;
+package com.onlyoffice.docs.atlassian.remote.web.dto.referencedata;
+
+import com.onlyoffice.model.documenteditor.config.document.ReferenceData;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 
-public final class Constants {
-    private Constants() { }
-
-    public static final String SETTINGS_KEY = "onlyoffice-docs.settings";
-    public static final String APP_ID_PREFIX = "ari:cloud:ecosystem::app/";
+@AllArgsConstructor
+@Builder
+@Data
+@NoArgsConstructor
+public class ReferenceDataResponse {
+    private String key;
+    private String fileType;
+    private String path;
+    private ReferenceData referenceData;
+    private String url;
+    private String token;
 }

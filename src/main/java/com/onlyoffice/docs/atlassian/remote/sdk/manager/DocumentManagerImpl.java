@@ -18,11 +18,15 @@
 
 package com.onlyoffice.docs.atlassian.remote.sdk.manager;
 
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraAttachment;
 import com.onlyoffice.docs.atlassian.remote.client.jira.JiraClient;
+import com.onlyoffice.docs.atlassian.remote.sdk.Utils;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
 import com.onlyoffice.manager.document.DefaultDocumentManager;
@@ -33,15 +37,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class DocumentManagerImpl extends DefaultDocumentManager {
     private final JiraClient jiraClient;
+    private final ConfluenceClient confluenceClient;
     private final XForgeTokenRepository xForgeTokenRepository;
     private final SecurityUtils securityUtils;
 
     public DocumentManagerImpl(final SettingsManager settingsManager, final JiraClient jiraClient,
+                               final ConfluenceClient confluenceClient,
                                final XForgeTokenRepository xForgeTokenRepository,
                                final SecurityUtils securityUtils) {
         super(settingsManager);
 
         this.jiraClient = jiraClient;
+        this.confluenceClient = confluenceClient;
         this.xForgeTokenRepository = xForgeTokenRepository;
         this.securityUtils = securityUtils;
     }
@@ -50,12 +57,24 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
     public String getDocumentKey(final String fileId, final boolean embedded) {
         Context context = securityUtils.getCurrentAppContext();
 
-        return String.format(
-                "%s_%s_%s",
-                context.getProduct(),
-                context.getCloudId(),
-                fileId
-        );
+        switch (context.getProduct()) {
+            case JIRA:
+                return String.format(
+                        "%s_%s_%s",
+                        context.getProduct(),
+                        context.getCloudId(),
+                        fileId
+                );
+            case CONFLUENCE:
+                ConfluenceAttachment confluenceAttachment = getConfluenceAttachment(fileId);
+
+                return Utils.createConfluenceDocumentKey(
+                        context.getCloudId(),
+                        confluenceAttachment
+                );
+            default:
+                throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        }
     }
 
     @Override
@@ -64,9 +83,13 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
 
         switch (context.getProduct()) {
             case JIRA:
-                JiraAttachment attachment = getJiraAttachment(fileId);
+                JiraAttachment jiraAttachment = getJiraAttachment(fileId);
 
-                return attachment.getFilename();
+                return jiraAttachment.getFilename();
+            case CONFLUENCE:
+                ConfluenceAttachment confluenceAttachment = getConfluenceAttachment(fileId);
+
+                return confluenceAttachment.getTitle();
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
@@ -77,6 +100,16 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
 
         return jiraClient.getAttachment(
                 jiraContext.getCloudId(),
+                attachmentId,
+                xForgeTokenRepository.getXForgeToken(securityUtils.getCurrentXForgeUserTokenId(), XForgeTokenType.USER)
+        ).block();
+    }
+
+    private ConfluenceAttachment getConfluenceAttachment(final String attachmentId) {
+        ConfluenceContext confluenceContext = (ConfluenceContext) securityUtils.getCurrentAppContext();
+
+        return confluenceClient.getAttachment(
+                confluenceContext.getCloudId(),
                 attachmentId,
                 xForgeTokenRepository.getXForgeToken(securityUtils.getCurrentXForgeUserTokenId(), XForgeTokenType.USER)
         ).block();

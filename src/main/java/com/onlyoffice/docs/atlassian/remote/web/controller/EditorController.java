@@ -18,8 +18,13 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
+import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
+import com.onlyoffice.docs.atlassian.remote.api.Product;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
+import com.onlyoffice.docs.atlassian.remote.web.dto.editor.EditorResponse;
 import com.onlyoffice.manager.settings.SettingsManager;
 import com.onlyoffice.manager.url.UrlManager;
 import com.onlyoffice.model.documenteditor.Config;
@@ -27,6 +32,7 @@ import com.onlyoffice.model.documenteditor.config.document.Type;
 import com.onlyoffice.model.documenteditor.config.editorconfig.Mode;
 import com.onlyoffice.service.documenteditor.config.ConfigService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,16 +50,31 @@ public class EditorController {
     private final ConfigService configService;
     private final SettingsManager settingsManager;
     private final UrlManager urlManager;
+    private final ConfluenceClient confluenceClient;
     private final SecurityUtils securityUtils;
 
-    @GetMapping(path = "/jira")
-    public String editorJiraPage(
+    @GetMapping({"jira", "confluence"})
+    public String editorPage(
             final @RequestParam Mode mode,
             final Model model
     ) throws ParseException {
-        JiraContext jiraContext = (JiraContext) securityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
+        Product product = context.getProduct();
 
-        Config config = configService.createConfig(jiraContext.getAttachmentId(), mode, Type.DESKTOP);
+        Config config = switch (product) {
+            case JIRA -> {
+                JiraContext jiraContext = (JiraContext) context;
+
+                yield configService.createConfig(jiraContext.getAttachmentId(), mode, Type.DESKTOP);
+            }
+            case CONFLUENCE -> {
+                ConfluenceContext confluenceContext = (ConfluenceContext) context;
+
+                yield configService.createConfig(confluenceContext.getAttachmentId(), mode, Type.DESKTOP);
+            }
+            default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        };
+
         model.addAttribute("config", config);
         model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
 
@@ -61,5 +82,27 @@ public class EditorController {
         model.addAttribute("settings", Map.of("demo", settingsManager.isDemoActive()));
 
         return "editor";
+    }
+
+    @GetMapping(path = {"jira", "confluence"}, params = "format=json")
+    public ResponseEntity<EditorResponse> editorJiraData(final @RequestParam Mode mode) throws ParseException {
+        Context context = securityUtils.getCurrentAppContext();
+        Product product = context.getProduct();
+
+        Config config = switch (product) {
+            case JIRA -> {
+                JiraContext jiraContext = (JiraContext) context;
+
+                yield configService.createConfig(jiraContext.getAttachmentId(), mode, Type.DESKTOP);
+            }
+            case CONFLUENCE -> {
+                ConfluenceContext confluenceContext = (ConfluenceContext) context;
+
+                yield configService.createConfig(confluenceContext.getAttachmentId(), mode, Type.DESKTOP);
+            }
+            default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        };
+
+        return ResponseEntity.ok(new EditorResponse(config, securityUtils.getSessionExpires().toEpochMilli()));
     }
 }

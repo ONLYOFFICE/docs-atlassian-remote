@@ -18,9 +18,12 @@
 
 package com.onlyoffice.docs.atlassian.remote.sdk.service;
 
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
 import com.onlyoffice.docs.atlassian.remote.client.ds.DocumentServerClient;
 import com.onlyoffice.docs.atlassian.remote.client.jira.JiraClient;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraAttachment;
@@ -40,6 +43,7 @@ import reactor.core.publisher.Flux;
 public class CallbackServiceImpl extends DefaultCallbackService {
     private final DocumentServerClient documentServerClient;
     private final JiraClient jiraClient;
+    private final ConfluenceClient confluenceClient;
     private final XForgeTokenRepository xForgeTokenRepository;
     private final SecurityUtils securityUtils;
 
@@ -48,12 +52,14 @@ public class CallbackServiceImpl extends DefaultCallbackService {
                                final SettingsManager settingsManager,
                                final DocumentServerClient documentServerClient,
                                final JiraClient jiraClient,
+                               final ConfluenceClient confluenceClient,
                                final XForgeTokenRepository xForgeTokenRepository,
                                final SecurityUtils securityUtils) {
         super(jwtManager, settingsManager);
 
         this.documentServerClient = documentServerClient;
         this.jiraClient = jiraClient;
+        this.confluenceClient = confluenceClient;
         this.xForgeTokenRepository = xForgeTokenRepository;
         this.securityUtils = securityUtils;
     }
@@ -97,6 +103,25 @@ public class CallbackServiceImpl extends DefaultCallbackService {
                                 XForgeTokenType.USER
                         )
                 );
+                break;
+            case CONFLUENCE:
+                ConfluenceContext confluenceContext = (ConfluenceContext) context;
+                ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(
+                        confluenceContext.getParentId());
+
+                Flux<DataBuffer> newFile = documentServerClient.getFile(url);
+
+                confluenceClient.updateAttachmentData(
+                        confluenceContext.getCloudId(),
+                        confluenceContentReference.getId(),
+                        confluenceContext.getAttachmentId(),
+                        newFile,
+                        xForgeTokenRepository.getXForgeToken(
+                                securityUtils.getCurrentXForgeUserTokenId(),
+                                XForgeTokenType.USER
+                        )
+                );
+
                 break;
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());

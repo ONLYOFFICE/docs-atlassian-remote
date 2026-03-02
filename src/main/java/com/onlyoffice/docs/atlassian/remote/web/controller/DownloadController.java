@@ -18,8 +18,12 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
+import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
 import com.onlyoffice.docs.atlassian.remote.client.jira.JiraClient;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
@@ -49,11 +53,12 @@ public class DownloadController {
     private final SettingsManager settingsManager;
     private final JwtManager jwtManager;
     private final JiraClient jiraClient;
+    private final ConfluenceClient confluenceClient;
     private final XForgeTokenRepository xForgeTokenRepository;
     private final SecurityUtils securityUtils;
 
-    @GetMapping("jira")
-    public ResponseEntity<Void> downloadJira(final @RequestHeader Map<String, String> headers) {
+    @GetMapping({"jira", "confluence"})
+    public ResponseEntity<Void> download(final @RequestHeader Map<String, String> headers) {
         if (settingsManager.isSecurityEnabled()) {
             String securityHeader = settingsManager.getSecurityHeader();
             String securityHeaderValue = Optional.ofNullable(headers.get(securityHeader))
@@ -76,16 +81,39 @@ public class DownloadController {
             }
         }
 
-        JiraContext jiraContext = (JiraContext) securityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
 
-        ClientResponse clientResponse = jiraClient.getAttachmentData(
-                jiraContext.getCloudId().toString(),
-                jiraContext.getAttachmentId(),
-                xForgeTokenRepository.getXForgeToken(
-                        securityUtils.getCurrentXForgeUserTokenId(),
-                        XForgeTokenType.USER
-                )
-        );
+        ClientResponse clientResponse = switch (context.getProduct()) {
+            case JIRA -> {
+                JiraContext jiraContext = (JiraContext) context;
+
+
+                yield jiraClient.getAttachmentData(
+                        jiraContext.getCloudId().toString(),
+                        jiraContext.getAttachmentId(),
+                        xForgeTokenRepository.getXForgeToken(
+                                securityUtils.getCurrentXForgeUserTokenId(),
+                                XForgeTokenType.USER
+                        )
+                );
+            }
+            case CONFLUENCE -> {
+                ConfluenceContext confluenceContext = (ConfluenceContext) context;
+                ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(
+                        confluenceContext.getParentId());
+
+                yield confluenceClient.getAttachmentData(
+                        confluenceContext.getCloudId().toString(),
+                        confluenceContentReference.getId(),
+                        confluenceContext.getAttachmentId(),
+                        xForgeTokenRepository.getXForgeToken(
+                                securityUtils.getCurrentXForgeUserTokenId(),
+                                XForgeTokenType.USER
+                        )
+                );
+            }
+            default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        };
 
         try {
             HttpStatusCode status = clientResponse.statusCode();
