@@ -360,4 +360,29 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
                 eq(XForgeTokenType.USER)
         );
     }
+
+    @Test
+    public void whenPostRemoteAuthorizationWithEmptyEntityId_returnBadRequest() throws Exception {
+        JiraUser user = DataTest.Users.ADMIN;
+
+        AuthorizationRequest authRequest = new AuthorizationRequest(
+                "parentId",
+                ""
+        );
+
+        mockMvc.perform(post(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", JIRA_APP_ID)
+                                        .claim("principal", user.getAccountId())
+                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                )
+                        )
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(authRequest))
+                )
+                .andExpect(status().isBadRequest());
+    }
 }

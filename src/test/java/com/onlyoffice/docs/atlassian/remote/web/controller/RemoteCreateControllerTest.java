@@ -378,4 +378,112 @@ public class RemoteCreateControllerTest extends AbstractControllerTest {
         }
     }
 
+    @Test
+    public void whenPostRemoteCreateWithNullParentId_returnBadRequest() throws Exception {
+        JiraUser user = DataTest.Users.ADMIN;
+
+        CreateRequest createRequest = new CreateRequest(
+                null,
+                "title",
+                DocumentType.WORD,
+                user.getLocale()
+        );
+
+        mockMvc.perform(post(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", JIRA_APP_ID)
+                                        .claim("principal", user.getAccountId())
+                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                )
+                        )
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createRequest))
+                )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void whenPostRemoteCreateWithEmptyTitle_returnBadRequest() throws Exception {
+        JiraUser user = DataTest.Users.ADMIN;
+
+        CreateRequest createRequest = new CreateRequest(
+                "parentId",
+                "",
+                DocumentType.WORD,
+                user.getLocale()
+        );
+
+        mockMvc.perform(post(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", JIRA_APP_ID)
+                                        .claim("principal", user.getAccountId())
+                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                )
+                        )
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createRequest))
+                )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void whenPostRemoteCreateWithNullLocale_returnBadRequest() throws Exception {
+        JiraUser user = DataTest.Users.ADMIN;
+
+        CreateRequest createRequest = new CreateRequest(
+                "parentId",
+                "title",
+                DocumentType.WORD,
+                null
+        );
+
+        mockMvc.perform(post(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", JIRA_APP_ID)
+                                        .claim("principal", user.getAccountId())
+                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                )
+                        )
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createRequest))
+                )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void whenPostRemoteCreateWithEmptyLocale_returnBadRequest() throws Exception {
+        JiraUser user = DataTest.Users.ADMIN;
+
+        CreateRequest createRequest = new CreateRequest(
+                "parentId",
+                "title",
+                DocumentType.WORD,
+                ""
+        );
+
+        mockMvc.perform(post(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", JIRA_APP_ID)
+                                        .claim("principal", user.getAccountId())
+                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                )
+                        )
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createRequest))
+                )
+                .andExpect(status().isBadRequest());
+    }
+
 }
