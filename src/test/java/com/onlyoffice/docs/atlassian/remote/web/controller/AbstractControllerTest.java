@@ -18,6 +18,7 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
+import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
 import com.onlyoffice.docs.atlassian.remote.client.jira.JiraClient;
 import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
 import com.redis.testcontainers.RedisContainer;
@@ -45,6 +46,8 @@ import org.testcontainers.utility.DockerImageName;
 public abstract class AbstractControllerTest {
     @Value("${forge.products.JIRA.appId}")
     protected String JIRA_APP_ID;
+    @Value("${forge.products.CONFLUENCE.appId}")
+    protected String CONFLUENCE_APP_ID;
     @Value("${app.base-url}")
     protected String APP_BASE_URL;
 
@@ -65,6 +68,9 @@ public abstract class AbstractControllerTest {
 
     @MockitoBean
     protected JiraClient jiraClient;
+
+    @MockitoBean
+    protected ConfluenceClient confluenceClient;
 
     @MockitoBean
     protected XForgeTokenRepository xForgeTokenRepository;

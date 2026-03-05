@@ -284,4 +284,80 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
                 eq(XForgeTokenType.USER)
         );
     }
+
+    @Test
+    public void whenPostRemoteAuthorizationWithConfluenceAudienceSuccessfully_returnOk() throws Exception {
+        AuthorizationRequest authRequest = new AuthorizationRequest(
+                "page:parentPageId",
+                "att123"
+        );
+
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.USER)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+
+        mockMvc.perform(post(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", CONFLUENCE_APP_ID)
+                                        .claim("principal", DataTest.ConfluenceUsers.ADMIN.getAccountId())
+                                        .claim("context", Map.of(
+                                                "cloudId", DataTest.testCloudId,
+                                                "environmentId", DataTest.testEnvironmentId
+                                        ))
+                                )
+                        )
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(authRequest))
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.remoteAppUrl").value(APP_BASE_URL))
+                .andExpect(jsonPath("$.token").isString());
+    }
+
+    @Test
+    public void whenPostRemoteAuthorizationWithConfluenceAudienceSuccessfully_verifyTokensSaved() throws Exception {
+        AuthorizationRequest authRequest = new AuthorizationRequest(
+                "page:parentPageId",
+                "att123"
+        );
+
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.USER)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+
+        mockMvc.perform(post(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", CONFLUENCE_APP_ID)
+                                        .claim("principal", DataTest.ConfluenceUsers.ADMIN.getAccountId())
+                                        .claim("context", Map.of(
+                                                "cloudId", DataTest.testCloudId,
+                                                "environmentId", DataTest.testEnvironmentId
+                                        ))
+                                )
+                        )
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(authRequest))
+                )
+                .andExpect(status().isOk());
+
+        verify(xForgeTokenRepository, times(2)).saveXForgeToken(anyString(), anyString(), any());
+        verify(xForgeTokenRepository).saveXForgeToken(
+                anyString(),
+                eq(DataTest.testXForgeOAuthSystemToken),
+                eq(XForgeTokenType.SYSTEM)
+        );
+        verify(xForgeTokenRepository).saveXForgeToken(
+                anyString(),
+                eq(DataTest.testXForgeOAuthUserToken),
+                eq(XForgeTokenType.USER)
+        );
+    }
 }

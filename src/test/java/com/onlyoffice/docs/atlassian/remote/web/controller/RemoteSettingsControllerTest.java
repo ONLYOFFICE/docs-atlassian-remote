@@ -19,6 +19,7 @@
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
 import com.onlyoffice.docs.atlassian.remote.api.Product;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceUser;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraUser;
 import com.onlyoffice.docs.atlassian.remote.entity.DemoServerConnection;
 import com.onlyoffice.docs.atlassian.remote.entity.DemoServerConnectionId;
@@ -226,6 +227,175 @@ public class RemoteSettingsControllerTest extends AbstractControllerTest {
                         .with(SecurityMockMvcRequestPostProcessors.jwt()
                                 .jwt(jwt -> jwt
                                         .claim("aud", JIRA_APP_ID)
+                                        .claim("principal", user.getAccountId())
+                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                )
+                        )
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.demoAvailable").value(true))
+                .andExpect(jsonPath("$.demoStart").exists())
+                .andExpect(jsonPath("$.demoEnd").exists());
+    }
+
+    @Test
+    public void whenGetConfluenceSettingsWithExistingDemoConnection_returnSettingsWithTrialData() throws Exception {
+        ConfluenceUser user = DataTest.ConfluenceUsers.ADMIN;
+        Date startDate = new Date();
+        String startDateString = dateFormat.format(startDate);
+        int trialPeriod = 30;
+
+        DemoServerConnectionId connectionId = DemoServerConnectionId.builder()
+                .cloudId(DataTest.testCloudId)
+                .product(Product.CONFLUENCE)
+                .build();
+
+        DemoServerConnection connection = DemoServerConnection.builder()
+                .id(connectionId)
+                .startDate(startDateString)
+                .build();
+
+        demoServerConnectionRepository.save(connection);
+
+        try (MockedStatic<ConfigurationUtils> mockedUtils = mockStatic(ConfigurationUtils.class)) {
+            mockedUtils.when(ConfigurationUtils::getDemoTrialPeriod).thenReturn(trialPeriod);
+
+            mockMvc.perform(get(REQUEST_MAPPING)
+                            .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                    .jwt(jwt -> jwt
+                                            .claim("aud", CONFLUENCE_APP_ID)
+                                            .claim("principal", user.getAccountId())
+                                            .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                    )
+                            )
+                            .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                            .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.demoAvailable").value(true))
+                    .andExpect(jsonPath("$.demoStart").exists())
+                    .andExpect(jsonPath("$.demoEnd").exists());
+        }
+    }
+
+    @Test
+    public void whenGetConfluenceSettingsWithoutExistingDemoConnection_returnDefaultSettings() throws Exception {
+        ConfluenceUser user = DataTest.ConfluenceUsers.ADMIN;
+
+        mockMvc.perform(get(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", CONFLUENCE_APP_ID)
+                                        .claim("principal", user.getAccountId())
+                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                )
+                        )
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.demoAvailable").value(true))
+                .andExpect(jsonPath("$.demoStart").doesNotExist())
+                .andExpect(jsonPath("$.demoEnd").doesNotExist());
+    }
+
+    @Test
+    public void whenGetConfluenceSettingsWithExpiredTrial_returnExpiredSettings() throws Exception {
+        ConfluenceUser user = DataTest.ConfluenceUsers.ADMIN;
+
+        Calendar pastDate = Calendar.getInstance();
+        pastDate.add(Calendar.DATE, -40);
+        Date startDate = pastDate.getTime();
+        String startDateString = dateFormat.format(startDate);
+        int trialPeriod = 30;
+
+        DemoServerConnectionId connectionId = DemoServerConnectionId.builder()
+                .cloudId(DataTest.testCloudId)
+                .product(Product.CONFLUENCE)
+                .build();
+
+        DemoServerConnection connection = DemoServerConnection.builder()
+                .id(connectionId)
+                .startDate(startDateString)
+                .build();
+
+        demoServerConnectionRepository.save(connection);
+
+        try (MockedStatic<ConfigurationUtils> mockedUtils = mockStatic(ConfigurationUtils.class)) {
+            mockedUtils.when(ConfigurationUtils::getDemoTrialPeriod).thenReturn(trialPeriod);
+
+            mockMvc.perform(get(REQUEST_MAPPING)
+                            .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                    .jwt(jwt -> jwt
+                                            .claim("aud", CONFLUENCE_APP_ID)
+                                            .claim("principal", user.getAccountId())
+                                            .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                    )
+                            )
+                            .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                            .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.demoAvailable").value(false))
+                    .andExpect(jsonPath("$.demoStart").exists())
+                    .andExpect(jsonPath("$.demoEnd").exists());
+        }
+    }
+
+    @Test
+    public void whenPostConfluenceSettingsWithExistingDemoConnection_returnExistingTrialData() throws Exception {
+        ConfluenceUser user = DataTest.ConfluenceUsers.ADMIN;
+
+        Calendar pastDate = Calendar.getInstance();
+        pastDate.add(Calendar.DATE, -10);
+        String originalStartDate = dateFormat.format(pastDate.getTime());
+
+        DemoServerConnectionId connectionId = DemoServerConnectionId.builder()
+                .cloudId(DataTest.testCloudId)
+                .product(Product.CONFLUENCE)
+                .build();
+
+        demoServerConnectionRepository.save(
+                DemoServerConnection.builder()
+                        .id(connectionId)
+                        .startDate(originalStartDate)
+                        .build()
+        );
+
+        mockMvc.perform(post(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", CONFLUENCE_APP_ID)
+                                        .claim("principal", user.getAccountId())
+                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                )
+                        )
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.demoAvailable").value(true))
+                .andExpect(jsonPath("$.demoStart").exists())
+                .andExpect(jsonPath("$.demoEnd").exists());
+
+        Optional<DemoServerConnection> connection = demoServerConnectionRepository.findById(connectionId);
+        assertTrue(connection.isPresent());
+        assertEquals(originalStartDate, connection.get().getStartDate());
+    }
+
+    @Test
+    public void whenPostConfluenceSettingsWithoutExistingDemoConnection_createNewTrialAndReturnData()
+            throws Exception {
+        ConfluenceUser user = DataTest.ConfluenceUsers.ADMIN;
+
+        mockMvc.perform(post(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", CONFLUENCE_APP_ID)
                                         .claim("principal", user.getAccountId())
                                         .claim("context", Map.of("cloudId", DataTest.testCloudId))
                                 )

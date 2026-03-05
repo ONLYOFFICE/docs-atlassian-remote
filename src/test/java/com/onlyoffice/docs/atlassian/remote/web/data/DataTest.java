@@ -18,6 +18,13 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.data;
 
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachmentVersion;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceContent;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceLinks;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceOperation;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceProfilePicture;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceUser;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraAttachment;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraPermission;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraPermissions;
@@ -28,6 +35,7 @@ import com.onlyoffice.model.documenteditor.Callback;
 import com.onlyoffice.model.documenteditor.callback.Status;
 import com.onlyoffice.model.settings.SettingsConstants;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
@@ -93,6 +101,65 @@ public final class DataTest {
             callback.setStatus(Status.EDITING);
 
             return callback;
+        }
+    }
+
+    public static class ConfluenceUsers {
+        public static final ConfluenceUser ADMIN = ConfluenceUser.builder()
+                .accountId("confluence-admin-account-id")
+                .displayName("Confluence Admin")
+                .locale("en-US")
+                .profilePicture(ConfluenceProfilePicture.builder()
+                        .path("/aa-avatar/profile.png")
+                        .build())
+                ._links(ConfluenceLinks.builder()
+                        .base("https://example.atlassian.net/wiki")
+                        .context("/wiki")
+                        .build())
+                .build();
+    }
+
+    public static class ConfluenceAttachments {
+        public static final ConfluenceAttachment ATTACHMENT_WITH_EDIT = buildAttachmentWithEdit();
+
+        private static ConfluenceAttachment buildAttachmentWithEdit() {
+            ConfluenceAttachmentVersion version = new ConfluenceAttachmentVersion();
+            version.setCreatedAt("2024-01-01T00:00:00.000Z");
+
+            return ConfluenceAttachment.builder()
+                    .id("att123")
+                    .title("filename.docx")
+                    .version(version)
+                    .operations(Map.of(
+                            "results",
+                            List.of(ConfluenceOperation.builder()
+                                    .operation("update")
+                                    .targetType("attachment")
+                                    .build())
+                    ))
+                    .build();
+        }
+    }
+
+    public static class ConfluenceSettings {
+        public static final com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceSettings
+                CORRECT_SETTINGS =
+                new com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceSettings(
+                        Map.of(
+                                SettingsConstants.URL, "https://test-docs-server.com",
+                                SettingsConstants.SECURITY_KEY, "secret"
+                        )
+                );
+    }
+
+    public static class ConfluenceContents {
+        public static ConfluenceContent getTestContent() {
+            ConfluenceContent content = new ConfluenceContent();
+            content.set_links(ConfluenceLinks.builder()
+                    .base("https://example.atlassian.net/wiki")
+                    .webui("/spaces/TEST/pages/123456/filename")
+                    .build());
+            return content;
         }
     }
 }

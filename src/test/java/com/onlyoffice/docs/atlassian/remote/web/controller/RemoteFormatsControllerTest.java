@@ -57,5 +57,20 @@ public class RemoteFormatsControllerTest extends AbstractControllerTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    public void whenGetFormatsWithConfluenceAudience_returnOk() throws Exception {
+        mockMvc.perform(get(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", CONFLUENCE_APP_ID)
+                                        .claim("principal", DataTest.ConfluenceUsers.ADMIN.getAccountId())
+                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                )
+                        )
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
 
 }

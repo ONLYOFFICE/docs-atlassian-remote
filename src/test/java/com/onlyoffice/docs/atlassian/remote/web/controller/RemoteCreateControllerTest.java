@@ -282,4 +282,100 @@ public class RemoteCreateControllerTest extends AbstractControllerTest {
         }
     }
 
+    @Test
+    public void whenPostRemoteCreateWithConfluenceAudienceWithoutRightsForCreate_returnForbidden() throws Exception {
+        CreateRequest createRequest = new CreateRequest(
+                "page:parentPageId",
+                "title",
+                DocumentType.WORD,
+                DataTest.ConfluenceUsers.ADMIN.getLocale()
+        );
+
+        when(confluenceClient.createAttachment(any(), any(), any(), any(), any()))
+                .thenThrow(
+                        new WebClientResponseException(
+                                HttpStatus.FORBIDDEN.value(),
+                                "",
+                                null,
+                                null,
+                                null
+                        )
+                );
+
+        mockMvc.perform(post(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", CONFLUENCE_APP_ID)
+                                        .claim("principal", DataTest.ConfluenceUsers.ADMIN.getAccountId())
+                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                )
+                        )
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createRequest))
+                )
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    public void whenPostRemoteCreateWithConfluenceAudience_returnOk() throws Exception {
+        CreateRequest createRequest = new CreateRequest(
+                "page:parentPageId",
+                "title",
+                DocumentType.WORD,
+                DataTest.ConfluenceUsers.ADMIN.getLocale()
+        );
+
+        when(confluenceClient.createAttachment(any(), any(), any(), any(), any()))
+                .thenReturn(List.of(DataTest.ConfluenceAttachments.ATTACHMENT_WITH_EDIT));
+
+        mockMvc.perform(post(REQUEST_MAPPING)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt
+                                        .claim("aud", CONFLUENCE_APP_ID)
+                                        .claim("principal", DataTest.ConfluenceUsers.ADMIN.getAccountId())
+                                        .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                )
+                        )
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                        .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(createRequest))
+                )
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void whenPostRemoteCreateWithConfluenceAudienceWithDifferentDocumentTypes_returnOk() throws Exception {
+        DocumentType[] documentTypes = {DocumentType.WORD, DocumentType.CELL, DocumentType.SLIDE};
+
+        for (DocumentType docType : documentTypes) {
+            CreateRequest createRequest = new CreateRequest(
+                    "page:parentPageId",
+                    "title",
+                    docType,
+                    DataTest.ConfluenceUsers.ADMIN.getLocale()
+            );
+
+            when(confluenceClient.createAttachment(any(), any(), any(), any(), any()))
+                    .thenReturn(List.of(DataTest.ConfluenceAttachments.ATTACHMENT_WITH_EDIT));
+
+            mockMvc.perform(post(REQUEST_MAPPING)
+                            .with(SecurityMockMvcRequestPostProcessors.jwt()
+                                    .jwt(jwt -> jwt
+                                            .claim("aud", CONFLUENCE_APP_ID)
+                                            .claim("principal", DataTest.ConfluenceUsers.ADMIN.getAccountId())
+                                            .claim("context", Map.of("cloudId", DataTest.testCloudId))
+                                    )
+                            )
+                            .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
+                            .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(objectMapper.writeValueAsString(createRequest))
+                    )
+                    .andExpect(status().isOk());
+        }
+    }
+
 }
