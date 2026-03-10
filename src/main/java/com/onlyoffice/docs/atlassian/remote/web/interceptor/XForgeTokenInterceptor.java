@@ -21,6 +21,7 @@ package com.onlyoffice.docs.atlassian.remote.web.interceptor;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
+import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.configuration.ForgeProperties;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
@@ -64,12 +65,6 @@ public class XForgeTokenInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        if (Objects.isNull(xForgeSystemToken)) {
-            log.warn("Required header '" + xForgeOauthSystemHeader + "' is not present.");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
-            return false;
-        }
-
         String userTokenError = validateXForgeToken(xForgeUserToken,
                 forgeProperties.getToken().getUser().getRefreshThreshold());
         if (Objects.nonNull(userTokenError)) {
@@ -79,21 +74,31 @@ public class XForgeTokenInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        String systemTokenError = validateXForgeToken(xForgeSystemToken,
-                forgeProperties.getToken().getSystem().getRefreshThreshold());
-        if (Objects.nonNull(systemTokenError)) {
-            String message = XForgeTokenType.SYSTEM + " token validation failed: " + systemTokenError;
-            log.warn(message);
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, message);
-            return false;
-        }
-
         Context context = securityUtils.getCurrentAppContext();
-        xForgeTokenRepository.saveXForgeToken(
-                securityUtils.createXForgeSystemTokenId(context.getProduct(), context.getCloudId()),
-                xForgeSystemToken,
-                XForgeTokenType.SYSTEM
-        );
+        boolean systemTokenRequired = context.getProduct() != Product.BITBUCKET;
+
+        if (Objects.isNull(xForgeSystemToken)) {
+            if (systemTokenRequired) {
+                log.warn("Required header '" + xForgeOauthSystemHeader + "' is not present.");
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                return false;
+            }
+        } else {
+            String systemTokenError = validateXForgeToken(xForgeSystemToken,
+                    forgeProperties.getToken().getSystem().getRefreshThreshold());
+            if (Objects.nonNull(systemTokenError)) {
+                String message = XForgeTokenType.SYSTEM + " token validation failed: " + systemTokenError;
+                log.warn(message);
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, message);
+                return false;
+            }
+
+            xForgeTokenRepository.saveXForgeToken(
+                    securityUtils.createXForgeSystemTokenId(context.getProduct(), context.getCloudId()),
+                    xForgeSystemToken,
+                    XForgeTokenType.SYSTEM
+            );
+        }
 
         xForgeTokenRepository.saveXForgeToken(
                 securityUtils.createXForgeUserTokenId(
