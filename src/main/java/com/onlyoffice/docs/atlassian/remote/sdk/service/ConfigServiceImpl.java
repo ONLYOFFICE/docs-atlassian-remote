@@ -21,6 +21,7 @@ package com.onlyoffice.docs.atlassian.remote.sdk.service;
 import com.onlyoffice.docs.atlassian.remote.Constants;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
@@ -97,6 +98,8 @@ public class ConfigServiceImpl extends DefaultConfigService {
             case CONFLUENCE:
                 preloadConfluenceResources(context.getCloudId(), ((ConfluenceContext) context).getParentId(), fileId);
                 break;
+            case BITBUCKET:
+                break;
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
@@ -135,6 +138,12 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 editorConfig.setLang(confluenceUser.getLocale());
 
                 return editorConfig;
+            case BITBUCKET:
+                BitbucketContext bitbucketContext = (BitbucketContext) context;
+
+                editorConfig.setLang(bitbucketContext.getLocale());
+
+                return editorConfig;
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
@@ -150,6 +159,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                     .instanceId(securityUtils.getCurrentXForgeSystemTokenId())
                     .fileKey(fileId)
                     .build();
+            case BITBUCKET -> null;
             default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         };
     }
@@ -230,6 +240,10 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 return Permissions.builder()
                         .edit(canEdit)
                         .build();
+            case BITBUCKET:
+                return Permissions.builder()
+                        .edit(false)
+                        .build();
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
@@ -250,6 +264,8 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 break;
             case CONFLUENCE:
                 customization.getGoback().setRequestClose(true);
+                break;
+            case BITBUCKET:
                 break;
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
@@ -297,6 +313,8 @@ public class ConfigServiceImpl extends DefaultConfigService {
                         .name(confluenceUser.getDisplayName())
                         .image(baseUrl + confluenceUser.getProfilePicture().getPath())
                         .build();
+            case BITBUCKET:
+                return null;
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
