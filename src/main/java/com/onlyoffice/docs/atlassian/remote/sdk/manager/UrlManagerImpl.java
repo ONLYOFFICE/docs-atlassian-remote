@@ -98,7 +98,7 @@ public class UrlManagerImpl extends DefaultUrlManager {
         Product product = context.getProduct();
 
         switch (product) {
-            case JIRA -> {
+            case JIRA, BITBUCKET -> {
                 return null;
             }
             case CONFLUENCE -> {

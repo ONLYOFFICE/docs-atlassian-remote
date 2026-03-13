@@ -31,10 +31,23 @@ public class ClientConfiguration {
     @Value("${atlassian.api.base-url}")
     private String atlassianApiBaseUrl;
 
+    @Value("${bitbucket.api.base-url}")
+    private String bitbucketApiBaseUrl;
+
     @Bean
     WebClient atlassianWebClient() {
         return WebClient.builder()
                 .baseUrl(atlassianApiBaseUrl)
+                .clientConnector(new ReactorClientHttpConnector(
+                        HttpClient.create().followRedirect(false)
+                ))
+                .build();
+    }
+
+    @Bean
+    WebClient bitbucketWebClient() {
+        return WebClient.builder()
+                .baseUrl(bitbucketApiBaseUrl)
                 .clientConnector(new ReactorClientHttpConnector(
                         HttpClient.create().followRedirect(false)
                 ))

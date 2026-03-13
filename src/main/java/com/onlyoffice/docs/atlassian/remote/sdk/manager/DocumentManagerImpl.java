@@ -18,6 +18,8 @@
 
 package com.onlyoffice.docs.atlassian.remote.sdk.manager;
 
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketFileId;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
@@ -32,6 +34,9 @@ import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
 import com.onlyoffice.manager.document.DefaultDocumentManager;
 import com.onlyoffice.manager.settings.SettingsManager;
 import org.springframework.stereotype.Component;
+import org.springframework.util.DigestUtils;
+
+import java.nio.charset.StandardCharsets;
 
 
 @Component
@@ -72,6 +77,20 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
                         context.getCloudId(),
                         confluenceAttachment
                 );
+            case BITBUCKET:
+                BitbucketContext bitbucketContext = (BitbucketContext) context;
+
+                String partKey = String.format(
+                        "%s_%s_%s",
+                        bitbucketContext.getCloudId(),
+                        bitbucketContext.getRepositoryId(),
+                        fileId
+                );
+
+                return String.format(
+                        "%s_%s",
+                        bitbucketContext.getProduct(),
+                        DigestUtils.md5DigestAsHex(partKey.getBytes(StandardCharsets.UTF_8)));
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
@@ -90,6 +109,13 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
                 ConfluenceAttachment confluenceAttachment = getConfluenceAttachment(fileId);
 
                 return confluenceAttachment.getTitle();
+            case BITBUCKET:
+                BitbucketFileId bitbucketFileId = BitbucketFileId.parse(fileId);
+                String filePath = bitbucketFileId.getFilePath();
+
+                int lastSlash = filePath.lastIndexOf('/');
+
+                return lastSlash >= 0 ? filePath.substring(lastSlash + 1) : filePath;
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }

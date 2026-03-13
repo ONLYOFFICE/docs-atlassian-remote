@@ -19,6 +19,7 @@
 package com.onlyoffice.docs.atlassian.remote.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.FitContext;
@@ -129,6 +130,8 @@ public class SecurityUtils {
                 return (Context) objectMapper.convertValue(contextAsMap, JiraContext.class);
             case CONFLUENCE:
                 return (Context) objectMapper.convertValue(contextAsMap, ConfluenceContext.class);
+            case BITBUCKET:
+                return (Context) objectMapper.convertValue(contextAsMap, BitbucketContext.class);
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + productFromContext);
         }

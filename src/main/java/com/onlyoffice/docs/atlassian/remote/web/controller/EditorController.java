@@ -18,6 +18,7 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
@@ -73,6 +74,23 @@ public class EditorController {
             default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         };
 
+        model.addAttribute("config", config);
+        model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
+
+        model.addAttribute("sessionExpires", securityUtils.getSessionExpires().toEpochMilli());
+        model.addAttribute("settings", Map.of("demo", settingsManager.isDemoActive()));
+
+        return "editor";
+    }
+
+    @GetMapping(path = "/bitbucket")
+    public String editorBitbucketPage(
+            final @RequestParam Mode mode,
+            final Model model
+    ) throws ParseException {
+        BitbucketContext bitbucketContext = (BitbucketContext) securityUtils.getCurrentAppContext();
+
+        Config config = configService.createConfig(bitbucketContext.getFileId(), mode, Type.EMBEDDED);
         model.addAttribute("config", config);
         model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
 

@@ -18,9 +18,28 @@
 
 package com.onlyoffice.docs.atlassian.remote.api;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-public enum Product {
-    CONFLUENCE,
-    JIRA,
-    BITBUCKET
+import java.util.Objects;
+
+
+@AllArgsConstructor
+@Getter
+public class BitbucketFileId {
+    private String commit;
+    private String filePath;
+
+    public static BitbucketFileId parse(final String value) {
+        if (Objects.isNull(value) || value.isEmpty()) {
+            return new BitbucketFileId(null, null);
+        }
+
+        String[] parts = value.split(":", 2);
+
+        String commit = parts.length > 0 ? parts[0] : null;
+        String filePath = parts.length > 1 ? parts[1] : null;
+
+        return new BitbucketFileId(commit, filePath);
+    }
 }
