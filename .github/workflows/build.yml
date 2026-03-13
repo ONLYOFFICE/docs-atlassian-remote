@@ -14,6 +14,9 @@ on:
         type: string
         required: false
 
+permissions:
+  contents: read
+
 env:
   DOCKER_HUB_IMAGE_NAME: docs-atlassian-remote
   DOCKER_HUB_NAMESPACE: onlyoffice
