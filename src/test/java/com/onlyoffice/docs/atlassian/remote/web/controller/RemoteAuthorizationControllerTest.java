@@ -55,7 +55,8 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
 
         AuthorizationRequest authRequest = new AuthorizationRequest(
                 "parentId",
-                "entityId"
+                "entityId",
+                null
         );
 
         mockMvc.perform(post(REQUEST_MAPPING)
@@ -79,7 +80,9 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
 
         AuthorizationRequest authRequest = new AuthorizationRequest(
                 "parentId",
-                "entityId"
+                "entityId",
+                null
+
         );
 
         mockMvc.perform(post(REQUEST_MAPPING)
@@ -142,7 +145,8 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
 
         AuthorizationRequest authRequest = new AuthorizationRequest(
                 null,
-                "entityId"
+                "entityId",
+                null
         );
 
         mockMvc.perform(post(REQUEST_MAPPING)
@@ -167,7 +171,8 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
 
         AuthorizationRequest authRequest = new AuthorizationRequest(
                 "",
-                "entityId"
+                "entityId",
+                null
         );
 
         mockMvc.perform(post(REQUEST_MAPPING)
@@ -192,6 +197,7 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
 
         AuthorizationRequest authRequest = new AuthorizationRequest(
                 "parentId",
+                null,
                 null
         );
 
@@ -217,7 +223,8 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
 
         AuthorizationRequest authRequest = new AuthorizationRequest(
                 "parentId",
-                "entityId"
+                "entityId",
+                null
         );
 
         when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
@@ -249,7 +256,8 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
 
         AuthorizationRequest authRequest = new AuthorizationRequest(
                 "parentId",
-                "entityId"
+                "entityId",
+                null
         );
 
         when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
