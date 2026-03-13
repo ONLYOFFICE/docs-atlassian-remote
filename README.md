@@ -77,6 +77,7 @@ List the main technologies and libraries used:
 | `APP_BASE_URL`               | Application Base URL                    |                                  -                                  |    ✅     |
 | `APP_SECRET_KEY`             | Application Secret Key (JWT/Encryption) |                                  -                                  |    ✅     |
 | `FORGE_JIRA_APP_ID`          | ID Forge applications for JIRA          |                                  -                                  |    ✅     |
+| `FORGE_CONFLUENCE_APP_ID`    | ID Forge applications for CONFLUENCE    |                                  -                                  |    ✅     |
 | `SPRING_DATASOURCE_URL`      | JDBC URL to the database                | `jdbc:postgresql://localhost:5432/onlyoffice_docs_atlassian_remote` |    ❌     |
 | `SPRING_DATASOURCE_USERNAME` | Database user                           |                            `onlyoffice`                             |    ❌     |
 | `SPRING_DATASOURCE_PASSWORD` | Database password                       |                            `onlyoffice`                             |    ❌     |
