@@ -49,7 +49,9 @@ document.addEventListener("DOMContentLoaded", function() {
                     editor.denyEditingRights("Editing of this file has been stopped as the current session has expired. Please reload the editor to continue.");
                 }, delay);
             } else {
-                editor.denyEditingRights("Editing of this file has been stopped as the current session has expired. Please reload the editor to continue.");
+                if (editor) {
+                    editor.denyEditingRights("Editing of this file has been stopped as the current session has expired. Please reload the editor to continue.");
+                }
             }
         };
 
