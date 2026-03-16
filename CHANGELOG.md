@@ -1,5 +1,9 @@
 # Changelog
 
+##
+## Fixed
+- Ignore 404 from getSettings during resource preload for Jira flows
+
 ## 1.1.0
 ## Added
 - Session expiration tracking (`sessionExpires`) in authorization response
