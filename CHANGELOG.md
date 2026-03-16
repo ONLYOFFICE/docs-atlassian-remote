@@ -1,6 +1,6 @@
 # Changelog
 
-##
+## 1.1.1
 ## Fixed
 - Ignore 404 from getSettings during resource preload for Jira flows
 
