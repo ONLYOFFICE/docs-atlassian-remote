@@ -44,6 +44,7 @@ import com.onlyoffice.model.documenteditor.config.editorconfig.Mode;
 import com.onlyoffice.model.documenteditor.config.editorconfig.customization.Close;
 import com.onlyoffice.service.documenteditor.config.DefaultConfigService;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -208,7 +209,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 XForgeTokenType.SYSTEM
         );
 
-        Mono.zip(
+        Mono.when(
                 jiraClient.getUser(cloudId, xForgeUserToken),
                 jiraClient.getAttachment(cloudId, attachmentId, xForgeUserToken),
                 jiraClient.getIssuePermissions(
@@ -222,6 +223,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
                         xForgeUserToken
                 ),
                 jiraClient.getSettings(Constants.SETTINGS_KEY, xForgeSystemToken)
+                        .onErrorResume(WebClientResponseException.NotFound.class, e -> Mono.empty())
         ).block();
     }
 }
