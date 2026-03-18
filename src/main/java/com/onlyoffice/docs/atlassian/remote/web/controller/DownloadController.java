@@ -180,12 +180,15 @@ public class DownloadController {
         }
 
         BitbucketFileId bitbucketFileId = BitbucketFileId.parse(
-                bitbucketContext.getFileId());
+                bitbucketContext.getRepositoryId(),
+                bitbucketContext.getFileId(),
+                bitbucketContext.getLocale()
+        );
 
         Flux<DataBuffer> dataBufferFlux = bitbucketWebClient.get()
             .uri("/2.0/repositories/{workspaceId}/{repoId}/src/{commit}/{path}",
                     "{" + bitbucketContext.getCloudId().toString() + "}",
-                    "{" + bitbucketContext.getRepositoryId() + "}",
+                    "{" + bitbucketFileId.getRepositoryId() + "}",
                     bitbucketFileId.getCommit(),
                     bitbucketFileId.getFilePath()
             )

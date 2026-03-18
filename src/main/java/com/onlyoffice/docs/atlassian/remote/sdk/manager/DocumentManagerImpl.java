@@ -18,7 +18,6 @@
 
 package com.onlyoffice.docs.atlassian.remote.sdk.manager;
 
-import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
 import com.onlyoffice.docs.atlassian.remote.api.BitbucketFileId;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
@@ -81,18 +80,19 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
                         confluenceAttachment
                 );
             case BITBUCKET:
-                BitbucketContext bitbucketContext = (BitbucketContext) context;
+                BitbucketFileId bitbucketFileIdForKey = BitbucketFileId.parse(fileId);
 
                 String partKey = String.format(
-                        "%s_%s_%s",
-                        bitbucketContext.getCloudId(),
-                        bitbucketContext.getRepositoryId(),
-                        fileId
+                        "%s_%s_%s_%s",
+                        context.getCloudId(),
+                        bitbucketFileIdForKey.getRepositoryId(),
+                        bitbucketFileIdForKey.getCommit(),
+                        bitbucketFileIdForKey.getFilePath()
                 );
 
                 return String.format(
                         "%s_%s",
-                        bitbucketContext.getProduct(),
+                        context.getProduct(),
                         DigestUtils.md5DigestAsHex(partKey.getBytes(StandardCharsets.UTF_8)));
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());

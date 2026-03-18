@@ -21,7 +21,7 @@ package com.onlyoffice.docs.atlassian.remote.sdk.service;
 import com.onlyoffice.docs.atlassian.remote.Constants;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketFileId;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraFileId;
@@ -141,9 +141,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
 
                 return editorConfig;
             case BITBUCKET:
-                BitbucketContext bitbucketContext = (BitbucketContext) context;
-
-                editorConfig.setLang(bitbucketContext.getLocale());
+                editorConfig.setLang(BitbucketFileId.parse(fileId).getLocale());
 
                 return editorConfig;
             default:

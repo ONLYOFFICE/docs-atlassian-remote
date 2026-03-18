@@ -19,6 +19,7 @@
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
 import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketFileId;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
@@ -96,8 +97,13 @@ public class EditorController {
             final Model model
     ) throws ParseException {
         BitbucketContext bitbucketContext = (BitbucketContext) securityUtils.getCurrentAppContext();
+        BitbucketFileId bitbucketFileId = BitbucketFileId.parse(
+                bitbucketContext.getRepositoryId(),
+                bitbucketContext.getFileId(),
+                bitbucketContext.getLocale()
+        );
 
-        Config config = configService.createConfig(bitbucketContext.getFileId(), mode, Type.EMBEDDED);
+        Config config = configService.createConfig(bitbucketFileId.toString(), mode, Type.EMBEDDED);
         model.addAttribute("config", config);
         model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
 

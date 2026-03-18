@@ -27,19 +27,41 @@ import java.util.Objects;
 @AllArgsConstructor
 @Getter
 public class BitbucketFileId {
+    private String repositoryId;
     private String commit;
     private String filePath;
+    private String locale;
 
     public static BitbucketFileId parse(final String value) {
         if (Objects.isNull(value) || value.isEmpty()) {
-            return new BitbucketFileId(null, null);
+            return new BitbucketFileId(null, null, null, null);
         }
 
-        String[] parts = value.split(":", 2);
+        String[] parts = value.split(":", 4);
+
+        String repositoryId = parts.length > 0 ? parts[0] : null;
+        String commit = parts.length > 1 ? parts[1] : null;
+        String filePath = parts.length > 2 ? parts[2] : null;
+        String locale = parts.length > 3 ? parts[3] : null;
+
+        return new BitbucketFileId(repositoryId, locale, commit, filePath);
+    }
+
+    public static BitbucketFileId parse(final String repositoryId, final String fileId, final String locale) {
+        if (Objects.isNull(fileId) || fileId.isEmpty()) {
+            return new BitbucketFileId(repositoryId, null, null, locale);
+        }
+
+        String[] parts = fileId.split(":", 2);
 
         String commit = parts.length > 0 ? parts[0] : null;
         String filePath = parts.length > 1 ? parts[1] : null;
 
-        return new BitbucketFileId(commit, filePath);
+        return new BitbucketFileId(repositoryId, commit, filePath, locale);
+    }
+
+    @Override
+    public String toString() {
+        return repositoryId + ":" + commit + ":" + filePath + ":" + locale;
     }
 }
