@@ -23,6 +23,7 @@ import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
+import com.onlyoffice.docs.atlassian.remote.api.JiraFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
@@ -64,8 +65,9 @@ public class EditorController {
         Config config = switch (product) {
             case JIRA -> {
                 JiraContext jiraContext = (JiraContext) context;
+                JiraFileId jiraFileId = JiraFileId.parse(jiraContext.getIssueId(), jiraContext.getAttachmentId());
 
-                yield configService.createConfig(jiraContext.getAttachmentId(), mode, Type.DESKTOP);
+                yield configService.createConfig(jiraFileId.toString(), mode, Type.DESKTOP);
             }
             case CONFLUENCE -> {
                 ConfluenceContext confluenceContext = (ConfluenceContext) context;

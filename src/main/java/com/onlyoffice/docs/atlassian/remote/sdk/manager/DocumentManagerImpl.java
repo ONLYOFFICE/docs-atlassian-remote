@@ -22,7 +22,7 @@ import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
 import com.onlyoffice.docs.atlassian.remote.api.BitbucketFileId;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
-import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
+import com.onlyoffice.docs.atlassian.remote.api.JiraFileId;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
@@ -64,11 +64,13 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
 
         switch (context.getProduct()) {
             case JIRA:
+                JiraFileId jiraFileId = JiraFileId.parse(fileId);
+
                 return String.format(
                         "%s_%s_%s",
                         context.getProduct(),
                         context.getCloudId(),
-                        fileId
+                        jiraFileId.getAttachmentId()
                 );
             case CONFLUENCE:
                 ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(fileId);
@@ -103,7 +105,8 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
 
         switch (context.getProduct()) {
             case JIRA:
-                JiraAttachment jiraAttachment = getJiraAttachment(fileId);
+                JiraFileId jiraFileId = JiraFileId.parse(fileId);
+                JiraAttachment jiraAttachment = getJiraAttachment(jiraFileId.getAttachmentId());
 
                 return jiraAttachment.getFilename();
             case CONFLUENCE:
@@ -124,10 +127,10 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
     }
 
     private JiraAttachment getJiraAttachment(final String attachmentId) {
-        JiraContext jiraContext = (JiraContext) securityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
 
         return jiraClient.getAttachment(
-                jiraContext.getCloudId(),
+                context.getCloudId(),
                 attachmentId,
                 xForgeTokenRepository.getXForgeToken(securityUtils.getCurrentXForgeUserTokenId(), XForgeTokenType.USER)
         ).block();

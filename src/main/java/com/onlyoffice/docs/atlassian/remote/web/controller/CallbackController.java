@@ -21,6 +21,8 @@ package com.onlyoffice.docs.atlassian.remote.web.controller;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
+import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
+import com.onlyoffice.docs.atlassian.remote.api.JiraFileId;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.manager.settings.SettingsManager;
 import com.onlyoffice.model.documenteditor.Callback;
@@ -65,6 +67,11 @@ public class CallbackController {
         Context context = securityUtils.getCurrentAppContext();
 
         String fileId = switch (context.getProduct()) {
+            case JIRA -> {
+                JiraContext jiraContext = (JiraContext) context;
+
+                yield JiraFileId.parse(jiraContext.getIssueId(), jiraContext.getAttachmentId()).toString();
+            }
             case CONFLUENCE -> {
                 ConfluenceContext confluenceContext = (ConfluenceContext) context;
 
