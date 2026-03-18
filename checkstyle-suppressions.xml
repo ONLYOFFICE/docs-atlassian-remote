@@ -14,6 +14,7 @@
     <suppress files="ConfluenceUser.java" checks="MemberName"/>
     <suppress files="ConfluenceContent.java" checks="MemberName"/>
     <suppress files="ConfigServiceImpl.java" checks="ParameterNumber"/>
+    <suppress files="ConfluenceFileId.java" checks="MagicNumber"/>
 
     <suppress files=".*Test.java" checks="HideUtilityClassConstructor"/>
     <suppress files=".*Test.java" checks="MethodName"/>

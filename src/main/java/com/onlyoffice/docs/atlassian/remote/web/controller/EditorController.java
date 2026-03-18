@@ -20,6 +20,7 @@ package com.onlyoffice.docs.atlassian.remote.web.controller;
 
 import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
@@ -68,8 +69,12 @@ public class EditorController {
             }
             case CONFLUENCE -> {
                 ConfluenceContext confluenceContext = (ConfluenceContext) context;
+                ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(
+                        confluenceContext.getParentId(),
+                        confluenceContext.getAttachmentId()
+                );
 
-                yield configService.createConfig(confluenceContext.getAttachmentId(), mode, Type.DESKTOP);
+                yield configService.createConfig(confluenceFileId.toString(), mode, Type.DESKTOP);
             }
             default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         };

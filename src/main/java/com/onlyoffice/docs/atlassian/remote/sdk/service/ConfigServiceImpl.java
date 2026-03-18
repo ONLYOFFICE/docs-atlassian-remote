@@ -22,8 +22,7 @@ import com.onlyoffice.docs.atlassian.remote.Constants;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
-import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
-import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
@@ -96,7 +95,10 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 preloadJiraResources(context.getCloudId(), ((JiraContext) context).getIssueId(), fileId);
                 break;
             case CONFLUENCE:
-                preloadConfluenceResources(context.getCloudId(), ((ConfluenceContext) context).getParentId(), fileId);
+                preloadConfluenceResources(
+                        context.getCloudId(),
+                        ConfluenceFileId.parse(fileId)
+                );
                 break;
             case BITBUCKET:
                 break;
@@ -157,7 +159,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
             case JIRA -> super.getReferenceData(fileId);
             case CONFLUENCE -> ReferenceData.builder()
                     .instanceId(securityUtils.getCurrentXForgeSystemTokenId())
-                    .fileKey(fileId)
+                    .fileKey(ConfluenceFileId.parse(fileId).getAttachmentId())
                     .build();
             case BITBUCKET -> null;
             default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
@@ -213,11 +215,11 @@ public class ConfigServiceImpl extends DefaultConfigService {
                         .edit(createAttachments.isHavePermission() && deleteAttachments.isHavePermission())
                         .build();
             case CONFLUENCE:
-                ConfluenceContext confluenceContext = (ConfluenceContext) context;
+                ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(fileId);
 
                 ConfluenceAttachment confluenceAttachment = confluenceClient.getAttachment(
-                        confluenceContext.getCloudId(),
-                        fileId,
+                        context.getCloudId(),
+                        confluenceFileId.getAttachmentId(),
                         xForgeTokenRepository.getXForgeToken(
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
@@ -348,9 +350,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
         ).block();
     }
 
-    private void preloadConfluenceResources(final UUID cloudId, final String parentId, final String attachmentId) {
-        ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(parentId);
-
+    private void preloadConfluenceResources(final UUID cloudId, final ConfluenceFileId confluenceFileId) {
         String xForgeUserToken = xForgeTokenRepository.getXForgeToken(
                 securityUtils.getCurrentXForgeUserTokenId(),
                 XForgeTokenType.USER
@@ -364,11 +364,11 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 confluenceClient.getUser(cloudId, xForgeUserToken),
                 confluenceClient.getContent(
                         cloudId,
-                        confluenceContentReference.getContentType(),
-                        confluenceContentReference.getId(),
+                        confluenceFileId.getParentContentType(),
+                        confluenceFileId.getParentId(),
                         xForgeUserToken
                 ),
-                confluenceClient.getAttachment(cloudId, attachmentId, xForgeUserToken),
+                confluenceClient.getAttachment(cloudId, confluenceFileId.getAttachmentId(), xForgeUserToken),
                 confluenceClient.getSettings(
                         Constants.SETTINGS_KEY,
                         xForgeSystemToken

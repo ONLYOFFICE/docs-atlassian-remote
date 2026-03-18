@@ -18,7 +18,7 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
-import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
@@ -121,11 +121,11 @@ public class RemoteReferenceDataController {
         }
 
         if (Objects.isNull(confluenceAttachment)) {
-            ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(parentId);
+            ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(parentId, null);
             ConfluenceResults<ConfluenceAttachment> results = confluenceClient.getAttachmentsForContent(
                     context.getCloudId(),
-                    confluenceContentReference.getContentType(),
-                    confluenceContentReference.getId(),
+                    confluenceFileId.getParentContentType(),
+                    confluenceFileId.getParentId(),
                     request.getPath(),
                     xForgeUserToken
             ).block();

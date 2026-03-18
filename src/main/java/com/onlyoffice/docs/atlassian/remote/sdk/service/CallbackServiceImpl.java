@@ -18,8 +18,7 @@
 
 package com.onlyoffice.docs.atlassian.remote.sdk.service;
 
-import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
-import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
@@ -105,16 +104,13 @@ public class CallbackServiceImpl extends DefaultCallbackService {
                 );
                 break;
             case CONFLUENCE:
-                ConfluenceContext confluenceContext = (ConfluenceContext) context;
-                ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(
-                        confluenceContext.getParentId());
-
+                ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(fileId);
                 Flux<DataBuffer> newFile = documentServerClient.getFile(url);
 
                 confluenceClient.updateAttachmentData(
-                        confluenceContext.getCloudId(),
-                        confluenceContentReference.getId(),
-                        confluenceContext.getAttachmentId(),
+                        context.getCloudId(),
+                        confluenceFileId.getParentId(),
+                        confluenceFileId.getAttachmentId(),
                         newFile,
                         xForgeTokenRepository.getXForgeToken(
                                 securityUtils.getCurrentXForgeUserTokenId(),
