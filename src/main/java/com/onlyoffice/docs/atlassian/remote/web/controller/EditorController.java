@@ -112,4 +112,13 @@ public class EditorController {
 
         return "editor";
     }
+
+
+    @GetMapping(path = {"jira", "confluence", "bitbucket"}, params = "format=single")
+    public String editor(final Model model) {
+        model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
+        model.addAttribute("settings", Map.of("demo", settingsManager.isDemoActive()));
+
+        return "editor";
+    }
 }

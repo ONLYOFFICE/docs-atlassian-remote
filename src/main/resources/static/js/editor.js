@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", function() {
         let editor;
         let sessionTimer;
 
-        const startEditor = () => {
+        const startEditor = (config) => {
             editor = new DocsAPI.DocEditor("documentEditor", config);
         };
 
@@ -66,6 +66,21 @@ document.addEventListener("DOMContentLoaded", function() {
             startSession(sessionExpires);
         });
 
+        events.on("OPEN_EDITOR", (data) => {
+            const { config, sessionExpires } = data;
+
+            config.events = {
+                onDocumentReady: onDocumentReady,
+                onRequestClose: getOnRequestClose(config.editorConfig.customization.goback.url),
+                onRequestOpen: onRequestOpen,
+                onRequestUsers: onRequestUsers,
+                onRequestReferenceData: onRequestReferenceData
+            };
+
+            startSession(sessionExpires);
+            startEditor(config);
+        });
+
         events.on("STOP_EDITING", (data) => {
             const {message} = data;
 
@@ -97,10 +112,12 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         }
 
-        const onRequestClose = (event) => {
-            events.emit("REQUEST_CLOSE", {
-                url: config.editorConfig.customization.goback.url
-            });
+        const getOnRequestClose = (url) => {
+            return (event) => {
+                events.emit("REQUEST_CLOSE", {
+                    url
+                });
+            }
         }
 
         const onRequestOpen = (event) => {
@@ -122,16 +139,18 @@ document.addEventListener("DOMContentLoaded", function() {
             events.emit("REQUEST_REFERENCE_DATA", event.data);
         }
 
-        config.events = {
-            onDocumentReady: onDocumentReady,
-            onRequestClose: onRequestClose,
-            onRequestOpen: onRequestOpen,
-            onRequestUsers: onRequestUsers,
-            onRequestReferenceData: onRequestReferenceData
-        };
+        if (config) {
+            config.events = {
+                onDocumentReady: onDocumentReady,
+                onRequestClose: getOnRequestClose(config.editorConfig.customization.goback.url),
+                onRequestOpen: onRequestOpen,
+                onRequestUsers: onRequestUsers,
+                onRequestReferenceData: onRequestReferenceData
+            };
 
-        startSession(sessionExpires);
-        startEditor();
+            startSession(sessionExpires);
+            startEditor(config);
+        }
 
     })(window.DocsAPI, window.config, window.events, window.sessionExpires, window.settings);
 });
