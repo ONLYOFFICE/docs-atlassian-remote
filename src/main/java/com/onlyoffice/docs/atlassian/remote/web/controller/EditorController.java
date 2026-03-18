@@ -27,6 +27,7 @@ import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.JiraFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
+import com.onlyoffice.docs.atlassian.remote.configuration.AppSecurityProperties;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.manager.settings.SettingsManager;
 import com.onlyoffice.manager.url.UrlManager;
@@ -54,6 +55,7 @@ public class EditorController {
     private final UrlManager urlManager;
     private final ConfluenceClient confluenceClient;
     private final SecurityUtils securityUtils;
+    private final AppSecurityProperties appSecurityProperties;
 
     @GetMapping({"jira", "confluence"})
     public String editorPage(
@@ -84,9 +86,9 @@ public class EditorController {
 
         model.addAttribute("config", config);
         model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
-
         model.addAttribute("sessionExpires", securityUtils.getSessionExpires().toEpochMilli());
         model.addAttribute("settings", Map.of("demo", settingsManager.isDemoActive()));
+        model.addAttribute("allowedOrigins", appSecurityProperties.getAllowedOrigins());
 
         return "editor";
     }
@@ -106,9 +108,9 @@ public class EditorController {
         Config config = configService.createConfig(bitbucketFileId.toString(), mode, Type.EMBEDDED);
         model.addAttribute("config", config);
         model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
-
         model.addAttribute("sessionExpires", securityUtils.getSessionExpires().toEpochMilli());
         model.addAttribute("settings", Map.of("demo", settingsManager.isDemoActive()));
+        model.addAttribute("allowedOrigins", appSecurityProperties.getAllowedOrigins());
 
         return "editor";
     }
@@ -118,6 +120,7 @@ public class EditorController {
     public String editor(final Model model) {
         model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
         model.addAttribute("settings", Map.of("demo", settingsManager.isDemoActive()));
+        model.addAttribute("allowedOrigins", appSecurityProperties.getAllowedOrigins());
 
         return "editor";
     }

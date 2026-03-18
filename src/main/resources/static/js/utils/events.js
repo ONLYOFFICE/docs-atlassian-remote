@@ -17,18 +17,34 @@
  */
 
 (function() {
+    const isAllowedOrigin = (origin) => {
+        const patterns = window.allowedOrigins || [];
+        return patterns.some((pattern) => {
+            if (!pattern.includes("*")) {
+                return origin === pattern;
+            }
+            try {
+                const suffix = pattern.replace(/^https?:\/\/\*/, "");
+                return new URL(origin).hostname.endsWith(suffix);
+            } catch (e) {
+                return false;
+            }
+        });
+    };
+
     const emit = (eventName, data) => {
         window.parent.postMessage(
             {
                 type: eventName,
                 data: data
             },
-            '*'
+            "*"
         );
     };
 
     const on = (eventName, callback) => {
-         window.addEventListener("message", (event) => {
+        window.addEventListener("message", (event) => {
+            if (!isAllowedOrigin(event.origin)) return;
             const { type, data } = event.data;
             if (type === eventName) {
                 callback(data);

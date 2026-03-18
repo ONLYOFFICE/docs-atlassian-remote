@@ -5,6 +5,9 @@ app:
     ttl:
       default: 5
       callback: 10080
+    allowed-origins:
+      - http://localhost:8001
+      - https://*.cdn.prod.atlassian-dev.net
 
 forge:
   products:
