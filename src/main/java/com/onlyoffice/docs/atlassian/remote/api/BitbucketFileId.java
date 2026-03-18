@@ -44,7 +44,7 @@ public class BitbucketFileId {
         String filePath = parts.length > 2 ? parts[2] : null;
         String locale = parts.length > 3 ? parts[3] : null;
 
-        return new BitbucketFileId(repositoryId, locale, commit, filePath);
+        return new BitbucketFileId(repositoryId, commit, filePath, locale);
     }
 
     public static BitbucketFileId parse(final String repositoryId, final String fileId, final String locale) {
