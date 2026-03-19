@@ -21,11 +21,10 @@ package com.onlyoffice.docs.atlassian.remote.sdk.service;
 import com.onlyoffice.docs.atlassian.remote.Constants;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
-import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
-import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketFileId;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
-import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
+import com.onlyoffice.docs.atlassian.remote.api.JiraFileId;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
@@ -93,10 +92,13 @@ public class ConfigServiceImpl extends DefaultConfigService {
 
         switch (context.getProduct()) {
             case JIRA:
-                preloadJiraResources(context.getCloudId(), ((JiraContext) context).getIssueId(), fileId);
+                preloadJiraResources(context.getCloudId(), JiraFileId.parse(fileId));
                 break;
             case CONFLUENCE:
-                preloadConfluenceResources(context.getCloudId(), ((ConfluenceContext) context).getParentId(), fileId);
+                preloadConfluenceResources(
+                        context.getCloudId(),
+                        ConfluenceFileId.parse(fileId)
+                );
                 break;
             case BITBUCKET:
                 break;
@@ -139,9 +141,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
 
                 return editorConfig;
             case BITBUCKET:
-                BitbucketContext bitbucketContext = (BitbucketContext) context;
-
-                editorConfig.setLang(bitbucketContext.getLocale());
+                editorConfig.setLang(BitbucketFileId.parse(fileId).getLocale());
 
                 return editorConfig;
             default:
@@ -154,10 +154,10 @@ public class ConfigServiceImpl extends DefaultConfigService {
         Context context = securityUtils.getCurrentAppContext();
 
         return switch (context.getProduct()) {
-            case JIRA -> super.getReferenceData(fileId);
+            case JIRA -> super.getReferenceData(JiraFileId.parse(fileId).getAttachmentId());
             case CONFLUENCE -> ReferenceData.builder()
                     .instanceId(securityUtils.getCurrentXForgeSystemTokenId())
-                    .fileKey(fileId)
+                    .fileKey(ConfluenceFileId.parse(fileId).getAttachmentId())
                     .build();
             case BITBUCKET -> null;
             default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
@@ -170,11 +170,11 @@ public class ConfigServiceImpl extends DefaultConfigService {
 
         switch (context.getProduct()) {
             case JIRA:
-                JiraContext jiraContext = (JiraContext) context;
+                JiraFileId jiraFileId = JiraFileId.parse(fileId);
 
                 JiraAttachment jiraAttachment = jiraClient.getAttachment(
-                        jiraContext.getCloudId(),
-                        fileId,
+                        context.getCloudId(),
+                        jiraFileId.getAttachmentId(),
                         xForgeTokenRepository.getXForgeToken(
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
@@ -182,8 +182,8 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 ).block();
 
                 JiraPermissions jiraPermissions = jiraClient.getIssuePermissions(
-                        jiraContext.getCloudId(),
-                        jiraContext.getIssueId(),
+                        context.getCloudId(),
+                        jiraFileId.getIssueId(),
                         List.of(
                                 JiraPermissionsKey.CREATE_ATTACHMENTS,
                                 JiraPermissionsKey.DELETE_OWN_ATTACHMENTS,
@@ -213,11 +213,11 @@ public class ConfigServiceImpl extends DefaultConfigService {
                         .edit(createAttachments.isHavePermission() && deleteAttachments.isHavePermission())
                         .build();
             case CONFLUENCE:
-                ConfluenceContext confluenceContext = (ConfluenceContext) context;
+                ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(fileId);
 
                 ConfluenceAttachment confluenceAttachment = confluenceClient.getAttachment(
-                        confluenceContext.getCloudId(),
-                        fileId,
+                        context.getCloudId(),
+                        confluenceFileId.getAttachmentId(),
                         xForgeTokenRepository.getXForgeToken(
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
@@ -320,7 +320,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
         }
     }
 
-    private void preloadJiraResources(final UUID cloudId, final String issueId, final String attachmentId) {
+    private void preloadJiraResources(final UUID cloudId, final JiraFileId jiraFileId) {
         String xForgeUserToken = xForgeTokenRepository.getXForgeToken(
                 securityUtils.getCurrentXForgeUserTokenId(),
                 XForgeTokenType.USER
@@ -332,10 +332,10 @@ public class ConfigServiceImpl extends DefaultConfigService {
 
         Mono.when(
                 jiraClient.getUser(cloudId, xForgeUserToken),
-                jiraClient.getAttachment(cloudId, attachmentId, xForgeUserToken),
+                jiraClient.getAttachment(cloudId, jiraFileId.getAttachmentId(), xForgeUserToken),
                 jiraClient.getIssuePermissions(
                         cloudId,
-                        issueId,
+                        jiraFileId.getIssueId(),
                         List.of(
                                 JiraPermissionsKey.CREATE_ATTACHMENTS,
                                 JiraPermissionsKey.DELETE_OWN_ATTACHMENTS,
@@ -348,9 +348,7 @@ public class ConfigServiceImpl extends DefaultConfigService {
         ).block();
     }
 
-    private void preloadConfluenceResources(final UUID cloudId, final String parentId, final String attachmentId) {
-        ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(parentId);
-
+    private void preloadConfluenceResources(final UUID cloudId, final ConfluenceFileId confluenceFileId) {
         String xForgeUserToken = xForgeTokenRepository.getXForgeToken(
                 securityUtils.getCurrentXForgeUserTokenId(),
                 XForgeTokenType.USER
@@ -364,11 +362,11 @@ public class ConfigServiceImpl extends DefaultConfigService {
                 confluenceClient.getUser(cloudId, xForgeUserToken),
                 confluenceClient.getContent(
                         cloudId,
-                        confluenceContentReference.getContentType(),
-                        confluenceContentReference.getId(),
+                        confluenceFileId.getParentContentType(),
+                        confluenceFileId.getParentId(),
                         xForgeUserToken
                 ),
-                confluenceClient.getAttachment(cloudId, attachmentId, xForgeUserToken),
+                confluenceClient.getAttachment(cloudId, confluenceFileId.getAttachmentId(), xForgeUserToken),
                 confluenceClient.getSettings(
                         Constants.SETTINGS_KEY,
                         xForgeSystemToken

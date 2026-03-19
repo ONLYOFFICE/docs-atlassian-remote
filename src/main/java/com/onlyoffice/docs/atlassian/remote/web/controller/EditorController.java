@@ -19,9 +19,12 @@
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
 import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketFileId;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
+import com.onlyoffice.docs.atlassian.remote.api.JiraFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
@@ -63,13 +66,18 @@ public class EditorController {
         Config config = switch (product) {
             case JIRA -> {
                 JiraContext jiraContext = (JiraContext) context;
+                JiraFileId jiraFileId = JiraFileId.parse(jiraContext.getIssueId(), jiraContext.getAttachmentId());
 
-                yield configService.createConfig(jiraContext.getAttachmentId(), mode, Type.DESKTOP);
+                yield configService.createConfig(jiraFileId.toString(), mode, Type.DESKTOP);
             }
             case CONFLUENCE -> {
                 ConfluenceContext confluenceContext = (ConfluenceContext) context;
+                ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(
+                        confluenceContext.getParentId(),
+                        confluenceContext.getAttachmentId()
+                );
 
-                yield configService.createConfig(confluenceContext.getAttachmentId(), mode, Type.DESKTOP);
+                yield configService.createConfig(confluenceFileId.toString(), mode, Type.DESKTOP);
             }
             default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         };
@@ -89,8 +97,13 @@ public class EditorController {
             final Model model
     ) throws ParseException {
         BitbucketContext bitbucketContext = (BitbucketContext) securityUtils.getCurrentAppContext();
+        BitbucketFileId bitbucketFileId = BitbucketFileId.parse(
+                bitbucketContext.getRepositoryId(),
+                bitbucketContext.getFileId(),
+                bitbucketContext.getLocale()
+        );
 
-        Config config = configService.createConfig(bitbucketContext.getFileId(), mode, Type.EMBEDDED);
+        Config config = configService.createConfig(bitbucketFileId.toString(), mode, Type.EMBEDDED);
         model.addAttribute("config", config);
         model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
 

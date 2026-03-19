@@ -19,7 +19,7 @@
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
 import com.onlyoffice.docs.atlassian.remote.api.BitbucketFileId;
-import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
@@ -115,13 +115,15 @@ public class DownloadController {
             }
             case CONFLUENCE -> {
                 ConfluenceContext confluenceContext = (ConfluenceContext) context;
-                ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(
-                        confluenceContext.getParentId());
+                ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(
+                        confluenceContext.getParentId(),
+                        confluenceContext.getAttachmentId()
+                );
 
                 yield confluenceClient.getAttachmentData(
                         confluenceContext.getCloudId().toString(),
-                        confluenceContentReference.getId(),
-                        confluenceContext.getAttachmentId(),
+                        confluenceFileId.getParentId(),
+                        confluenceFileId.getAttachmentId(),
                         xForgeTokenRepository.getXForgeToken(
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
@@ -178,12 +180,15 @@ public class DownloadController {
         }
 
         BitbucketFileId bitbucketFileId = BitbucketFileId.parse(
-                bitbucketContext.getFileId());
+                bitbucketContext.getRepositoryId(),
+                bitbucketContext.getFileId(),
+                bitbucketContext.getLocale()
+        );
 
         Flux<DataBuffer> dataBufferFlux = bitbucketWebClient.get()
             .uri("/2.0/repositories/{workspaceId}/{repoId}/src/{commit}/{path}",
                     "{" + bitbucketContext.getCloudId().toString() + "}",
-                    "{" + bitbucketContext.getRepositoryId() + "}",
+                    "{" + bitbucketFileId.getRepositoryId() + "}",
                     bitbucketFileId.getCommit(),
                     bitbucketFileId.getFilePath()
             )

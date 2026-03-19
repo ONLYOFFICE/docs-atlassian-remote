@@ -18,9 +18,13 @@
 
 package com.onlyoffice.docs.atlassian.remote.sdk.manager;
 
-import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketFileId;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
+import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
+import com.onlyoffice.docs.atlassian.remote.api.JiraFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
@@ -76,7 +80,7 @@ public class UrlManagerImpl extends DefaultUrlManager {
         return remoteAppJwtService.signUri(
                 remoteAppUrlProvider.getDownloadUrl(context.getProduct()),
                 securityUtils.getCurrentAccountId(),
-                context
+                buildTokenContext(context, fileId)
         ).toString();
     }
 
@@ -87,7 +91,7 @@ public class UrlManagerImpl extends DefaultUrlManager {
         return remoteAppJwtService.signUri(
                 remoteAppUrlProvider.getCallbackUrl(context.getProduct()),
                 securityUtils.getCurrentAccountId(),
-                context,
+                buildTokenContext(context, fileId),
                 ttlCallback
         ).toString();
     }
@@ -102,14 +106,12 @@ public class UrlManagerImpl extends DefaultUrlManager {
                 return null;
             }
             case CONFLUENCE -> {
-                ConfluenceContext confluenceContext = (ConfluenceContext) context;
-                ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(
-                        confluenceContext.getParentId());
+                ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(fileId);
 
                 ConfluenceContent content = confluenceClient.getContent(
-                        confluenceContext.getCloudId(),
-                        confluenceContentReference.getContentType(),
-                        confluenceContentReference.getId(),
+                        context.getCloudId(),
+                        confluenceFileId.getParentContentType(),
+                        confluenceFileId.getParentId(),
                         xForgeTokenRepository.getXForgeToken(
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
@@ -117,21 +119,61 @@ public class UrlManagerImpl extends DefaultUrlManager {
                 ).block();
 
                 Optional<String> blogsFilter = Optional.ofNullable(
-                        "blogpost".equals(confluenceContentReference.getContentType()) ? "blogs" : null);
+                        "blogpost".equals(confluenceFileId.getParentContentType()) ? "blogs" : null);
 
                 return UriComponentsBuilder
                         .fromUriString(content.get_links().getBase())
                         .path(content.get_links().getWebui().replaceAll("(/spaces/~[^/]+).*", "$1"))
                         .path("/apps/{appId}/{environmentId}/onlyoffice")
                         .queryParamIfPresent("filter", blogsFilter)
-                        .queryParam("parentId", confluenceContentReference.getId())
+                        .queryParam("parentId", confluenceFileId.getParentId())
                         .buildAndExpand(
                                 forgeProperties.getAppIdByProductWithoutPrefix(product),
-                                confluenceContext.getEnvironmentId()
+                                context.getEnvironmentId()
                         )
                         .toUriString();
             }
             default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
+    }
+
+    private Context buildTokenContext(final Context context, final String fileId) {
+        return switch (context.getProduct()) {
+            case JIRA -> {
+                JiraFileId jiraFileId = JiraFileId.parse(fileId);
+
+                yield JiraContext.builder()
+                        .product(context.getProduct())
+                        .cloudId(context.getCloudId())
+                        .environmentId(context.getEnvironmentId())
+                        .issueId(jiraFileId.getIssueId())
+                        .attachmentId(jiraFileId.getAttachmentId())
+                        .build();
+            }
+            case CONFLUENCE -> {
+                ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(fileId);
+
+                yield ConfluenceContext.builder()
+                        .product(context.getProduct())
+                        .cloudId(context.getCloudId())
+                        .environmentId(context.getEnvironmentId())
+                        .parentId(confluenceFileId.getParentContentType() + ":" + confluenceFileId.getParentId())
+                        .attachmentId(confluenceFileId.getAttachmentId())
+                        .build();
+            }
+            case BITBUCKET -> {
+                BitbucketFileId bitbucketFileId = BitbucketFileId.parse(fileId);
+
+                yield BitbucketContext.builder()
+                        .product(context.getProduct())
+                        .cloudId(context.getCloudId())
+                        .environmentId(context.getEnvironmentId())
+                        .repositoryId(bitbucketFileId.getRepositoryId())
+                        .fileId(bitbucketFileId.getCommit() + ":" + bitbucketFileId.getFilePath())
+                        .locale(bitbucketFileId.getLocale())
+                        .build();
+            }
+            default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        };
     }
 }

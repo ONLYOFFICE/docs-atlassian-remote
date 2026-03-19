@@ -26,20 +26,29 @@ import java.util.Objects;
 
 @AllArgsConstructor
 @Getter
-public class ConfluenceContentReference {
-    private String id;
-    private String contentType;
+public class JiraFileId {
+    private String issueId;
+    private String attachmentId;
 
-    public static ConfluenceContentReference parse(final String value) {
+    public static JiraFileId parse(final String value) {
         if (Objects.isNull(value) || value.isEmpty()) {
-            return new ConfluenceContentReference(null, null);
+            return new JiraFileId(null, null);
         }
 
         String[] parts = value.split(":", 2);
 
-        String contentType = parts.length > 0 ? parts[0] : null;
-        String id = parts.length > 1 ? parts[1] : null;
+        String issueId = parts.length > 0 ? parts[0] : null;
+        String attachmentId = parts.length > 1 ? parts[1] : null;
 
-        return new ConfluenceContentReference(id, contentType);
+        return new JiraFileId(issueId, attachmentId);
+    }
+
+    public static JiraFileId parse(final String issueId, final String attachmentId) {
+        return new JiraFileId(issueId, attachmentId);
+    }
+
+    @Override
+    public String toString() {
+        return issueId + ":" + attachmentId;
     }
 }
