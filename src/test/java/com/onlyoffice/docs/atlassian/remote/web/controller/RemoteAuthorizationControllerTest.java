@@ -297,7 +297,8 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
     public void whenPostRemoteAuthorizationWithConfluenceAudienceSuccessfully_returnOk() throws Exception {
         AuthorizationRequest authRequest = new AuthorizationRequest(
                 "page:parentPageId",
-                "att123"
+                "att123",
+                "en"
         );
 
         when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
@@ -330,7 +331,8 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
     public void whenPostRemoteAuthorizationWithConfluenceAudienceSuccessfully_verifyTokensSaved() throws Exception {
         AuthorizationRequest authRequest = new AuthorizationRequest(
                 "page:parentPageId",
-                "att123"
+                "att123",
+                "en"
         );
 
         when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
@@ -375,7 +377,8 @@ public class RemoteAuthorizationControllerTest extends AbstractControllerTest {
 
         AuthorizationRequest authRequest = new AuthorizationRequest(
                 "parentId",
-                ""
+                "",
+                "en"
         );
 
         mockMvc.perform(post(REQUEST_MAPPING)
