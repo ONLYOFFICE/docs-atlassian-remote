@@ -1,6 +1,6 @@
 # Changelog
 
-##
+## 2.0.0
 ## Added
 - Confluence support
 - Bitbucket support
