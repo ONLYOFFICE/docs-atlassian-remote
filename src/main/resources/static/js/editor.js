@@ -22,13 +22,15 @@ document.addEventListener("DOMContentLoaded", function() {
             events.emit("DOCS_API_UNDEFINED");
             return;
         } else {
-            events.emit("PAGE_IS_LOADED");
+            events.emit("PAGE_IS_LOADED", {
+                config
+            });
         }
 
         let editor;
         let sessionTimer;
 
-        const startEditor = () => {
+        const startEditor = (config) => {
             editor = new DocsAPI.DocEditor("documentEditor", config);
         };
 
@@ -47,7 +49,9 @@ document.addEventListener("DOMContentLoaded", function() {
                     editor.denyEditingRights("Editing of this file has been stopped as the current session has expired. Please reload the editor to continue.");
                 }, delay);
             } else {
-                editor.denyEditingRights("Editing of this file has been stopped as the current session has expired. Please reload the editor to continue.");
+                if (editor) {
+                    editor.denyEditingRights("Editing of this file has been stopped as the current session has expired. Please reload the editor to continue.");
+                }
             }
         };
 
@@ -60,6 +64,21 @@ document.addEventListener("DOMContentLoaded", function() {
 
             stopSession();
             startSession(sessionExpires);
+        });
+
+        events.on("OPEN_EDITOR", (data) => {
+            const { config, sessionExpires } = data;
+
+            config.events = {
+                onDocumentReady: onDocumentReady,
+                onRequestClose: getOnRequestClose(config.editorConfig.customization.goback.url),
+                onRequestOpen: onRequestOpen,
+                onRequestUsers: onRequestUsers,
+                onRequestReferenceData: onRequestReferenceData
+            };
+
+            startSession(sessionExpires);
+            startEditor(config);
         });
 
         events.on("STOP_EDITING", (data) => {
@@ -83,14 +102,26 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         });
 
+        events.on("SET_REFERENCE_DATA", (data) => {
+            editor.setReferenceData(data);
+        });
+
         const onDocumentReady = () => {
             events.emit("DOCUMENT_READY", {
                 demo: settings.demo
             });
         }
 
-        const onRequestClose = () => {
-           events.emit("REQUEST_CLOSE");
+        const getOnRequestClose = (url) => {
+            return (event) => {
+                events.emit("REQUEST_CLOSE", {
+                    url
+                });
+            }
+        }
+
+        const onRequestOpen = (event) => {
+            events.emit("REQUEST_OPEN", event.data);
         }
 
         const onRequestUsers = function(event) {
@@ -104,14 +135,22 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         };
 
-        config.events = {
-            onDocumentReady: onDocumentReady,
-            onRequestClose: onRequestClose,
-            onRequestUsers: onRequestUsers
-        };
+        const onRequestReferenceData = function(event) {
+            events.emit("REQUEST_REFERENCE_DATA", event.data);
+        }
 
-        startSession(sessionExpires);
-        startEditor();
+        if (config) {
+            config.events = {
+                onDocumentReady: onDocumentReady,
+                onRequestClose: getOnRequestClose(config.editorConfig.customization.goback.url),
+                onRequestOpen: onRequestOpen,
+                onRequestUsers: onRequestUsers,
+                onRequestReferenceData: onRequestReferenceData
+            };
+
+            startSession(sessionExpires);
+            startEditor(config);
+        }
 
     })(window.DocsAPI, window.config, window.events, window.sessionExpires, window.settings);
 });

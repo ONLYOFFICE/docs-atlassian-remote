@@ -21,5 +21,6 @@ package com.onlyoffice.docs.atlassian.remote.api;
 
 public enum Product {
     CONFLUENCE,
-    JIRA
+    JIRA,
+    BITBUCKET
 }

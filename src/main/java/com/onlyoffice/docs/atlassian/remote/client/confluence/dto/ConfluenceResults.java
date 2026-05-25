@@ -16,18 +16,15 @@
  *
  */
 
-package com.onlyoffice.docs.atlassian.remote.web.dto.editor;
+package com.onlyoffice.docs.atlassian.remote.client.confluence.dto;
 
-import com.onlyoffice.model.documenteditor.Config;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
+import java.util.List;
 
 @AllArgsConstructor
 @Data
-@NoArgsConstructor
-public class EditorResponse {
-    private Config config;
-    private long sessionExpires;
+public class ConfluenceResults<T> {
+    private List<T> results;
 }

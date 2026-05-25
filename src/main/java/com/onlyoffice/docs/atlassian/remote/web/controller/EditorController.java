@@ -18,7 +18,16 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketFileId;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
+import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
+import com.onlyoffice.docs.atlassian.remote.api.JiraFileId;
+import com.onlyoffice.docs.atlassian.remote.api.Product;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
+import com.onlyoffice.docs.atlassian.remote.configuration.AppSecurityProperties;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.manager.settings.SettingsManager;
 import com.onlyoffice.manager.url.UrlManager;
@@ -44,21 +53,74 @@ public class EditorController {
     private final ConfigService configService;
     private final SettingsManager settingsManager;
     private final UrlManager urlManager;
+    private final ConfluenceClient confluenceClient;
     private final SecurityUtils securityUtils;
+    private final AppSecurityProperties appSecurityProperties;
 
-    @GetMapping(path = "/jira")
-    public String editorJiraPage(
+    @GetMapping({"jira", "confluence"})
+    public String editorPage(
             final @RequestParam Mode mode,
             final Model model
     ) throws ParseException {
-        JiraContext jiraContext = (JiraContext) securityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
+        Product product = context.getProduct();
 
-        Config config = configService.createConfig(jiraContext.getAttachmentId(), mode, Type.DESKTOP);
+        Config config = switch (product) {
+            case JIRA -> {
+                JiraContext jiraContext = (JiraContext) context;
+                JiraFileId jiraFileId = JiraFileId.parse(jiraContext.getIssueId(), jiraContext.getAttachmentId());
+
+                yield configService.createConfig(jiraFileId.toString(), mode, Type.DESKTOP);
+            }
+            case CONFLUENCE -> {
+                ConfluenceContext confluenceContext = (ConfluenceContext) context;
+                ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(
+                        confluenceContext.getParentId(),
+                        confluenceContext.getAttachmentId()
+                );
+
+                yield configService.createConfig(confluenceFileId.toString(), mode, Type.DESKTOP);
+            }
+            default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        };
+
         model.addAttribute("config", config);
         model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
-
         model.addAttribute("sessionExpires", securityUtils.getSessionExpires().toEpochMilli());
         model.addAttribute("settings", Map.of("demo", settingsManager.isDemoActive()));
+        model.addAttribute("allowedOrigins", appSecurityProperties.getAllowedOrigins());
+
+        return "editor";
+    }
+
+    @GetMapping(path = "/bitbucket")
+    public String editorBitbucketPage(
+            final @RequestParam Mode mode,
+            final Model model
+    ) throws ParseException {
+        BitbucketContext bitbucketContext = (BitbucketContext) securityUtils.getCurrentAppContext();
+        BitbucketFileId bitbucketFileId = BitbucketFileId.parse(
+                bitbucketContext.getRepositoryId(),
+                bitbucketContext.getFileId(),
+                bitbucketContext.getLocale()
+        );
+
+        Config config = configService.createConfig(bitbucketFileId.toString(), mode, Type.EMBEDDED);
+        model.addAttribute("config", config);
+        model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
+        model.addAttribute("sessionExpires", securityUtils.getSessionExpires().toEpochMilli());
+        model.addAttribute("settings", Map.of("demo", settingsManager.isDemoActive()));
+        model.addAttribute("allowedOrigins", appSecurityProperties.getAllowedOrigins());
+
+        return "editor";
+    }
+
+
+    @GetMapping(path = {"jira", "confluence", "bitbucket"}, params = "format=single")
+    public String editor(final Model model) {
+        model.addAttribute("documentServerApiUrl", urlManager.getDocumentServerApiUrl());
+        model.addAttribute("settings", Map.of("demo", settingsManager.isDemoActive()));
+        model.addAttribute("allowedOrigins", appSecurityProperties.getAllowedOrigins());
 
         return "editor";
     }

@@ -19,6 +19,8 @@
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
 import com.onlyoffice.docs.atlassian.remote.api.Context;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
 import com.onlyoffice.docs.atlassian.remote.client.jira.JiraClient;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraAttachment;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
@@ -51,6 +53,7 @@ import java.util.Locale;
 public class RemoteCreateController {
     private final DocumentManager documentManager;
     private final JiraClient jiraClient;
+    private final ConfluenceClient confluenceClient;
     private final SecurityUtils securityUtils;
 
     @PostMapping
@@ -71,8 +74,8 @@ public class RemoteCreateController {
                 Locale.forLanguageTag(locale)
         );
 
-        switch (context.getProduct()) {
-            case JIRA:
+        return switch (context.getProduct()) {
+            case JIRA -> {
                 List<JiraAttachment> newAttachments = jiraClient.createAttachment(
                         context.getCloudId(),
                         parentId,
@@ -81,15 +84,31 @@ public class RemoteCreateController {
                         xForgeUserToken
                 );
 
-                return ResponseEntity.ok(
+                yield ResponseEntity.ok(
                         new CreateResponse(
                                 String.valueOf(newAttachments.getFirst().getId()),
                                 newAttachments.getFirst().getFilename()
                         )
                 );
-            default:
-                throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
-        }
+            }
+            case CONFLUENCE -> {
+                List<ConfluenceAttachment> newAttachments = confluenceClient.createAttachment(
+                        context.getCloudId(),
+                        parentId,
+                        toDataBufferFlux(newBlankFile),
+                        title + "." + fileExtension,
+                        xForgeUserToken
+                );
+
+                yield ResponseEntity.ok(
+                        new CreateResponse(
+                                String.valueOf(newAttachments.getFirst().getId()),
+                                newAttachments.getFirst().getTitle()
+                        )
+                );
+            }
+            default -> throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        };
     }
 
     private static Flux<DataBuffer> toDataBufferFlux(final InputStream inputStream) {

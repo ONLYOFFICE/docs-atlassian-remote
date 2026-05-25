@@ -34,6 +34,7 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class RemoteCreateControllerTest extends AbstractControllerTest {
@@ -58,9 +59,11 @@ public class RemoteCreateControllerTest extends AbstractControllerTest {
                                 )
                         )
                         .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content("{invalid json}")
                 )
+                .andDo(print())
                 .andExpect(status().isBadRequest());
     }
 
@@ -84,6 +87,7 @@ public class RemoteCreateControllerTest extends AbstractControllerTest {
                                 )
                         )
                         .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createRequest))
                 )
@@ -110,6 +114,7 @@ public class RemoteCreateControllerTest extends AbstractControllerTest {
                                 )
                         )
                         .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createRequest))
                 )
@@ -136,6 +141,7 @@ public class RemoteCreateControllerTest extends AbstractControllerTest {
                                 )
                         )
                         .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createRequest))
                 )
@@ -196,6 +202,7 @@ public class RemoteCreateControllerTest extends AbstractControllerTest {
                         )
                         .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
                         .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createRequest))
                 )
@@ -233,6 +240,7 @@ public class RemoteCreateControllerTest extends AbstractControllerTest {
                         )
                         .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
                         .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                        .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(createRequest))
                 )
@@ -266,6 +274,7 @@ public class RemoteCreateControllerTest extends AbstractControllerTest {
                             )
                             .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
                             .header("x-forge-oauth-user", DataTest.testXForgeOAuthUserToken)
+                            .header("x-forge-oauth-system", DataTest.testXForgeOAuthSystemToken)
                             .contentType(MediaType.APPLICATION_JSON_VALUE)
                             .content(objectMapper.writeValueAsString(createRequest))
                     )

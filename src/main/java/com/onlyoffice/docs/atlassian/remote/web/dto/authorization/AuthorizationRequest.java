@@ -32,4 +32,5 @@ public class AuthorizationRequest {
     private String parentId;
     @NotBlank
     private String entityId;
+    private String locale;
 }

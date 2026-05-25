@@ -14,6 +14,9 @@ on:
         type: string
         required: false
 
+permissions:
+  contents: read
+
 env:
   DOCKER_HUB_IMAGE_NAME: docs-atlassian-remote
   DOCKER_HUB_NAMESPACE: onlyoffice
@@ -23,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: 'recursive'
 
@@ -39,6 +42,9 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: get version script
+        run: wget https://raw.githubusercontent.com/ONLYOFFICE/ga-common/refs/heads/master/.github/scripts/get_connector_version.py
+
       - name: Handle-tag
         env:
           EVENT: ${{ github.event_name }}
@@ -46,9 +52,9 @@ jobs:
           MANUAL_TAG: ${{ github.event.inputs.tag }}
         run: |
           if [[ "$EVENT" == 'push' && "$REF" == 'develop' ]]; then
-           echo "RC_TAG=1.0.1-rc.${{ github.run_number }}" >> "$GITHUB_ENV"
+           echo "RC_TAG=$(python3 get_connector_version.py CHANGELOG.md)-rc.${{ github.run_number }}" >> "$GITHUB_ENV"
           elif [[ "$EVENT" == 'workflow_dispatch' && -z "$TAG" ]]; then
-           echo "RC_TAG=1.0.1-rc.${{ github.run_number }}" >> "$GITHUB_ENV"
+           echo "RC_TAG=$(python3 get_connector_version.py CHANGELOG.md)-rc.${{ github.run_number }}" >> "$GITHUB_ENV"
           fi
 
       - name: Publish Image

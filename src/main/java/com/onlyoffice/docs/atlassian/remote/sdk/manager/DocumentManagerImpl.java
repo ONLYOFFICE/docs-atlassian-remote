@@ -18,30 +18,41 @@
 
 package com.onlyoffice.docs.atlassian.remote.sdk.manager;
 
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketFileId;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
-import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
+import com.onlyoffice.docs.atlassian.remote.api.JiraFileId;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraAttachment;
 import com.onlyoffice.docs.atlassian.remote.client.jira.JiraClient;
+import com.onlyoffice.docs.atlassian.remote.sdk.Utils;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.docs.atlassian.remote.security.XForgeTokenRepository;
 import com.onlyoffice.manager.document.DefaultDocumentManager;
 import com.onlyoffice.manager.settings.SettingsManager;
 import org.springframework.stereotype.Component;
+import org.springframework.util.DigestUtils;
+
+import java.nio.charset.StandardCharsets;
 
 
 @Component
 public class DocumentManagerImpl extends DefaultDocumentManager {
     private final JiraClient jiraClient;
+    private final ConfluenceClient confluenceClient;
     private final XForgeTokenRepository xForgeTokenRepository;
     private final SecurityUtils securityUtils;
 
     public DocumentManagerImpl(final SettingsManager settingsManager, final JiraClient jiraClient,
+                               final ConfluenceClient confluenceClient,
                                final XForgeTokenRepository xForgeTokenRepository,
                                final SecurityUtils securityUtils) {
         super(settingsManager);
 
         this.jiraClient = jiraClient;
+        this.confluenceClient = confluenceClient;
         this.xForgeTokenRepository = xForgeTokenRepository;
         this.securityUtils = securityUtils;
     }
@@ -50,12 +61,42 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
     public String getDocumentKey(final String fileId, final boolean embedded) {
         Context context = securityUtils.getCurrentAppContext();
 
-        return String.format(
-                "%s_%s_%s",
-                context.getProduct(),
-                context.getCloudId(),
-                fileId
-        );
+        switch (context.getProduct()) {
+            case JIRA:
+                JiraFileId jiraFileId = JiraFileId.parse(fileId);
+
+                return String.format(
+                        "%s_%s_%s",
+                        context.getProduct(),
+                        context.getCloudId(),
+                        jiraFileId.getAttachmentId()
+                );
+            case CONFLUENCE:
+                ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(fileId);
+                ConfluenceAttachment confluenceAttachment = getConfluenceAttachment(confluenceFileId);
+
+                return Utils.createConfluenceDocumentKey(
+                        context.getCloudId(),
+                        confluenceAttachment
+                );
+            case BITBUCKET:
+                BitbucketFileId bitbucketFileIdForKey = BitbucketFileId.parse(fileId);
+
+                String partKey = String.format(
+                        "%s_%s_%s_%s",
+                        context.getCloudId(),
+                        bitbucketFileIdForKey.getRepositoryId(),
+                        bitbucketFileIdForKey.getCommit(),
+                        bitbucketFileIdForKey.getFilePath()
+                );
+
+                return String.format(
+                        "%s_%s",
+                        context.getProduct(),
+                        DigestUtils.md5DigestAsHex(partKey.getBytes(StandardCharsets.UTF_8)));
+            default:
+                throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
+        }
     }
 
     @Override
@@ -64,20 +105,43 @@ public class DocumentManagerImpl extends DefaultDocumentManager {
 
         switch (context.getProduct()) {
             case JIRA:
-                JiraAttachment attachment = getJiraAttachment(fileId);
+                JiraFileId jiraFileId = JiraFileId.parse(fileId);
+                JiraAttachment jiraAttachment = getJiraAttachment(jiraFileId.getAttachmentId());
 
-                return attachment.getFilename();
+                return jiraAttachment.getFilename();
+            case CONFLUENCE:
+                ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(fileId);
+                ConfluenceAttachment confluenceAttachment = getConfluenceAttachment(confluenceFileId);
+
+                return confluenceAttachment.getTitle();
+            case BITBUCKET:
+                BitbucketFileId bitbucketFileId = BitbucketFileId.parse(fileId);
+                String filePath = bitbucketFileId.getFilePath();
+
+                int lastSlash = filePath.lastIndexOf('/');
+
+                return lastSlash >= 0 ? filePath.substring(lastSlash + 1) : filePath;
             default:
                 throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         }
     }
 
     private JiraAttachment getJiraAttachment(final String attachmentId) {
-        JiraContext jiraContext = (JiraContext) securityUtils.getCurrentAppContext();
+        Context context = securityUtils.getCurrentAppContext();
 
         return jiraClient.getAttachment(
-                jiraContext.getCloudId(),
+                context.getCloudId(),
                 attachmentId,
+                xForgeTokenRepository.getXForgeToken(securityUtils.getCurrentXForgeUserTokenId(), XForgeTokenType.USER)
+        ).block();
+    }
+
+    private ConfluenceAttachment getConfluenceAttachment(final ConfluenceFileId confluenceFileId) {
+        Context context = securityUtils.getCurrentAppContext();
+
+        return confluenceClient.getAttachment(
+                context.getCloudId(),
+                confluenceFileId.getAttachmentId(),
                 xForgeTokenRepository.getXForgeToken(securityUtils.getCurrentXForgeUserTokenId(), XForgeTokenType.USER)
         ).block();
     }

@@ -19,7 +19,10 @@
 package com.onlyoffice.docs.atlassian.remote.sdk.manager;
 
 import com.onlyoffice.docs.atlassian.remote.api.Context;
+import com.onlyoffice.docs.atlassian.remote.api.Product;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceSettings;
 import com.onlyoffice.docs.atlassian.remote.client.jira.JiraClient;
 import com.onlyoffice.docs.atlassian.remote.client.jira.dto.JiraSettings;
 import com.onlyoffice.docs.atlassian.remote.entity.DemoServerConnection;
@@ -33,6 +36,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -43,6 +47,7 @@ import static com.onlyoffice.docs.atlassian.remote.Constants.SETTINGS_KEY;
 @Component
 public class SettingsManagerImpl extends DefaultSettingsManager {
     private final JiraClient jiraClient;
+    private final ConfluenceClient confluenceClient;
     private final XForgeTokenRepository xForgeTokenRepository;
     private final DemoServerConnectionRepository demoServerConnectionRepository;
     private final SecurityUtils securityUtils;
@@ -50,12 +55,22 @@ public class SettingsManagerImpl extends DefaultSettingsManager {
     @Override
     public String getSetting(final String name) {
         Context context = securityUtils.getCurrentAppContext();
+        Product product = context.getProduct();
+
+        if (Product.BITBUCKET.equals(context.getProduct())) {
+            Map<String, String> bitbucketSettings = Map.of(
+                    "demo", "true",
+                    "demo-start", "3000/12/12 12:12:12"
+            );
+
+            return bitbucketSettings.get(name);
+        }
 
         if (name.equals("demo-start")) {
            DemoServerConnection demoServerConnection = demoServerConnectionRepository.findById(
                     DemoServerConnectionId.builder()
                             .cloudId(context.getCloudId())
-                            .product(context.getProduct())
+                            .product(product)
                             .build()
             ).orElse(null);
 
@@ -66,25 +81,51 @@ public class SettingsManagerImpl extends DefaultSettingsManager {
            }
         }
 
-        try {
-            JiraSettings jiraSettings = jiraClient.getSettings(
-                    SETTINGS_KEY,
-                    xForgeTokenRepository.getXForgeToken(
-                            securityUtils.getCurrentXForgeSystemTokenId(),
-                            XForgeTokenType.SYSTEM
-                    )
-            ).block();
+        return switch (product) {
+            case JIRA -> {
+                try {
+                    JiraSettings jiraSettings = jiraClient.getSettings(
+                            SETTINGS_KEY,
+                            xForgeTokenRepository.getXForgeToken(
+                                    securityUtils.getCurrentXForgeSystemTokenId(),
+                                    XForgeTokenType.SYSTEM
+                            )
+                    ).block();
 
-            return Optional.ofNullable(jiraSettings.getValue().get(name))
-                    .map(String::valueOf)
-                    .orElse(null);
-        } catch (WebClientResponseException e) {
-            if (HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
-                return null;
-            } else {
-                throw e;
+                    yield Optional.ofNullable(jiraSettings.getValue().get(name))
+                            .map(String::valueOf)
+                            .orElse(null);
+                } catch (WebClientResponseException e) {
+                    if (HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
+                        yield null;
+                    } else {
+                        throw e;
+                    }
+                }
             }
-        }
+            case CONFLUENCE -> {
+                try {
+                    ConfluenceSettings confluenceSettings = confluenceClient.getSettings(
+                            SETTINGS_KEY,
+                            xForgeTokenRepository.getXForgeToken(
+                                    securityUtils.getCurrentXForgeSystemTokenId(),
+                                    XForgeTokenType.SYSTEM
+                            )
+                    ).block();
+
+                    yield Optional.ofNullable(confluenceSettings.getValue().get(name))
+                            .map(String::valueOf)
+                            .orElse(null);
+                } catch (WebClientResponseException e) {
+                    if (HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
+                        yield null;
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+            default -> throw new IllegalStateException("Unexpected value: " + product);
+        };
     }
 
     @Override

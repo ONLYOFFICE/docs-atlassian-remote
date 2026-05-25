@@ -18,8 +18,10 @@
 
 package com.onlyoffice.docs.atlassian.remote.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.UUID;
 
-
-public record FitContext(UUID cloudId) {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record FitContext(UUID cloudId, UUID environmentId) {
 }
