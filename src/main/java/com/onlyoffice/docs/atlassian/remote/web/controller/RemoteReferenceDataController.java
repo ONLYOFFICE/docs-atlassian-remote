@@ -18,12 +18,13 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
-import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceAttachment;
+import com.onlyoffice.docs.atlassian.remote.client.confluence.dto.ConfluenceResults;
 import com.onlyoffice.docs.atlassian.remote.sdk.Utils;
 import com.onlyoffice.docs.atlassian.remote.security.RemoteAppJwtService;
 import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
@@ -46,6 +47,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Objects;
 
@@ -119,22 +121,28 @@ public class RemoteReferenceDataController {
         }
 
         if (Objects.isNull(confluenceAttachment)) {
-            ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(parentId);
-            confluenceAttachment = confluenceClient.getAttachmentsForContent(
+            ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(parentId, null);
+            ConfluenceResults<ConfluenceAttachment> results = confluenceClient.getAttachmentsForContent(
                     context.getCloudId(),
-                    confluenceContentReference.getContentType(),
-                    confluenceContentReference.getId(),
+                    confluenceFileId.getParentContentType(),
+                    confluenceFileId.getParentId(),
                     request.getPath(),
                     xForgeUserToken
-            ).block().getResults().getFirst();
+            ).block();
+
+            if (Objects.isNull(results)
+                    || Objects.isNull(results.getResults())
+                    || results.getResults().isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Attachment not found");
+            }
+
+            confluenceAttachment = results.getResults().getFirst();
         }
 
-        if (!Objects.isNull(confluenceAttachment)) {
-            referenceData = ReferenceData.builder()
-                    .fileKey(confluenceAttachment.getId())
-                    .instanceId(securityUtils.getCurrentXForgeSystemTokenId())
-                    .build();
-        }
+        referenceData = ReferenceData.builder()
+                .fileKey(confluenceAttachment.getId())
+                .instanceId(securityUtils.getCurrentXForgeSystemTokenId())
+                .build();
 
         String documentName = confluenceAttachment.getTitle();
         ConfluenceContext confluenceContext = ConfluenceContext.builder()

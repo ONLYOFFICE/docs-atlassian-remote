@@ -18,6 +18,12 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
+import com.onlyoffice.docs.atlassian.remote.api.Context;
+import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
+import com.onlyoffice.docs.atlassian.remote.api.JiraFileId;
+import com.onlyoffice.docs.atlassian.remote.security.SecurityUtils;
 import com.onlyoffice.manager.settings.SettingsManager;
 import com.onlyoffice.model.documenteditor.Callback;
 import com.onlyoffice.service.documenteditor.callback.CallbackService;
@@ -40,6 +46,7 @@ import java.util.Optional;
 public class CallbackController {
     private final SettingsManager settingsManager;
     private final CallbackService callbackService;
+    private final SecurityUtils securityUtils;
 
     @PostMapping({"jira", "confluence"})
     public ResponseEntity<Map<String, Object>> callback(
@@ -57,7 +64,26 @@ public class CallbackController {
                     .body(Map.of("message", "Access denied: " + e.getMessage()));
         }
 
-        callbackService.processCallback(verifiedCallback, null);
+        Context context = securityUtils.getCurrentAppContext();
+
+        String fileId = switch (context.getProduct()) {
+            case JIRA -> {
+                JiraContext jiraContext = (JiraContext) context;
+
+                yield JiraFileId.parse(jiraContext.getIssueId(), jiraContext.getAttachmentId()).toString();
+            }
+            case CONFLUENCE -> {
+                ConfluenceContext confluenceContext = (ConfluenceContext) context;
+
+                yield ConfluenceFileId.parse(
+                        confluenceContext.getParentId(),
+                        confluenceContext.getAttachmentId()
+                ).toString();
+            }
+            default -> null;
+        };
+
+        callbackService.processCallback(verifiedCallback, fileId);
 
         return ResponseEntity.ok(Map.of("error", 0));
     }

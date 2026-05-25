@@ -36,6 +36,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -55,6 +56,15 @@ public class SettingsManagerImpl extends DefaultSettingsManager {
     public String getSetting(final String name) {
         Context context = securityUtils.getCurrentAppContext();
         Product product = context.getProduct();
+
+        if (Product.BITBUCKET.equals(context.getProduct())) {
+            Map<String, String> bitbucketSettings = Map.of(
+                    "demo", "true",
+                    "demo-start", "3000/12/12 12:12:12"
+            );
+
+            return bitbucketSettings.get(name);
+        }
 
         if (name.equals("demo-start")) {
            DemoServerConnection demoServerConnection = demoServerConnectionRepository.findById(
@@ -114,6 +124,7 @@ public class SettingsManagerImpl extends DefaultSettingsManager {
                     }
                 }
             }
+            default -> throw new IllegalStateException("Unexpected value: " + product);
         };
     }
 

@@ -18,10 +18,9 @@
 
 package com.onlyoffice.docs.atlassian.remote.sdk.service;
 
-import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContentReference;
-import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceFileId;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
-import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
+import com.onlyoffice.docs.atlassian.remote.api.JiraFileId;
 import com.onlyoffice.docs.atlassian.remote.api.XForgeTokenType;
 import com.onlyoffice.docs.atlassian.remote.client.confluence.ConfluenceClient;
 import com.onlyoffice.docs.atlassian.remote.client.ds.DocumentServerClient;
@@ -71,11 +70,11 @@ public class CallbackServiceImpl extends DefaultCallbackService {
 
         switch (context.getProduct()) {
             case JIRA:
-                JiraContext jiraContext = (JiraContext) context;
+                JiraFileId jiraFileId = JiraFileId.parse(fileId);
 
                 JiraAttachment jiraAttachment = jiraClient.getAttachment(
-                        jiraContext.getCloudId(),
-                        jiraContext.getAttachmentId(),
+                        context.getCloudId(),
+                        jiraFileId.getAttachmentId(),
                         xForgeTokenRepository.getXForgeToken(
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
@@ -85,8 +84,8 @@ public class CallbackServiceImpl extends DefaultCallbackService {
                 Flux<DataBuffer> file = documentServerClient.getFile(url);
 
                 jiraClient.createAttachment(
-                        jiraContext.getCloudId(),
-                        jiraContext.getIssueId(),
+                        context.getCloudId(),
+                        jiraFileId.getIssueId(),
                         file,
                         jiraAttachment.getFilename(),
                         xForgeTokenRepository.getXForgeToken(
@@ -96,8 +95,8 @@ public class CallbackServiceImpl extends DefaultCallbackService {
                 );
 
                 jiraClient.deleteAttachment(
-                        jiraContext.getCloudId(),
-                        jiraContext.getAttachmentId(),
+                        context.getCloudId(),
+                        jiraFileId.getAttachmentId(),
                         xForgeTokenRepository.getXForgeToken(
                                 securityUtils.getCurrentXForgeUserTokenId(),
                                 XForgeTokenType.USER
@@ -105,16 +104,13 @@ public class CallbackServiceImpl extends DefaultCallbackService {
                 );
                 break;
             case CONFLUENCE:
-                ConfluenceContext confluenceContext = (ConfluenceContext) context;
-                ConfluenceContentReference confluenceContentReference = ConfluenceContentReference.parse(
-                        confluenceContext.getParentId());
-
+                ConfluenceFileId confluenceFileId = ConfluenceFileId.parse(fileId);
                 Flux<DataBuffer> newFile = documentServerClient.getFile(url);
 
                 confluenceClient.updateAttachmentData(
-                        confluenceContext.getCloudId(),
-                        confluenceContentReference.getId(),
-                        confluenceContext.getAttachmentId(),
+                        context.getCloudId(),
+                        confluenceFileId.getParentId(),
+                        confluenceFileId.getAttachmentId(),
                         newFile,
                         xForgeTokenRepository.getXForgeToken(
                                 securityUtils.getCurrentXForgeUserTokenId(),

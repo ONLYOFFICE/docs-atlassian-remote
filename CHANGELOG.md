@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.0.0
+## Added
+- Confluence support
+- Bitbucket support
+- Editor config API (`/api/v1/remote/editor-config`) for Jira, Confluence, and Bitbucket
+- Support for larger Forge headers by increasing the maximum HTTP request header size to 16KB
+- Added postMessage origin validation for the editor iframe
+
+## 1.1.1
+## Fixed
+- Ignore 404 from getSettings during resource preload for Jira flows
+
 ## 1.1.0
 ## Added
 - Session expiration tracking (`sessionExpires`) in authorization response

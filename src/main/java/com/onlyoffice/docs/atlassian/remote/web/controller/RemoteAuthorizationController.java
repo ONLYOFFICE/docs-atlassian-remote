@@ -20,6 +20,7 @@ package com.onlyoffice.docs.atlassian.remote.web.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
@@ -74,6 +75,14 @@ public class RemoteAuthorizationController {
                     .environmentId(context.getEnvironmentId())
                     .parentId(request.getParentId())
                     .attachmentId(request.getEntityId())
+                    .build();
+            case BITBUCKET -> BitbucketContext.builder()
+                    .product(context.getProduct())
+                    .cloudId(context.getCloudId())
+                    .environmentId(context.getEnvironmentId())
+                    .repositoryId(request.getParentId())
+                    .fileId(request.getEntityId())
+                    .locale(request.getLocale())
                     .build();
             default ->  throw new UnsupportedOperationException("Unsupported product: " + context.getProduct());
         };

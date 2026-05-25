@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.onlyoffice.docs.atlassian.remote.api.BitbucketContext;
 import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
@@ -92,6 +93,9 @@ public class RemoteAppJwtService {
                                         return true;
                                     case CONFLUENCE:
                                         objectMapper.convertValue(contextAsMap, ConfluenceContext.class);
+                                        return true;
+                                    case BITBUCKET:
+                                        objectMapper.convertValue(contextAsMap, BitbucketContext.class);
                                         return true;
                                     default:
                                         return false;

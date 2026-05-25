@@ -47,7 +47,7 @@ public class XForgeTokenRepository {
         String token = getXForgeToken(key, xForgeTokenType);
 
         if (Objects.isNull(token)) {
-            return null;
+            return Instant.now();
         }
 
         JWT jwt = JWTParser.parse(token);
