@@ -18,6 +18,7 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
@@ -48,6 +49,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class EditorControllerTest extends AbstractControllerTest {
     private static final String JIRA_EDITOR_PATH = "/editor/jira";
+    private static final String CONFLUENCE_EDITOR_PATH = "/editor/confluence";
+    private static final String TEST_PARENT_ID = "page:parentPageId";
 
     @Value("${app.security.ttl.default}")
     private long ttlDefault;
@@ -410,6 +413,415 @@ public class EditorControllerTest extends AbstractControllerTest {
         mockMvc.perform(get(JIRA_EDITOR_PATH)
                         .param("token", token)
                         .param("mode", Mode.EDIT.name())
+                ).andExpect(status().isOk())
+                .andExpect(view().name("editor"))
+                .andExpect(model().attribute("documentServerApiUrl", containsString("https://test-docs-server.com")))
+                .andExpect(model().attributeExists("sessionExpires"))
+                .andExpect(model().attribute("settings", Map.of("demo", false)));
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageWithoutAuthorization_returnUnauthorized() throws Exception {
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("mode", Mode.EDIT.name())
+                )
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageWithInvalidToken_returnUnauthorized() throws Exception {
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", "token")
+                )
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageWithInvalidTokenAudience_returnUnauthorized() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                "invalid_audience",
+                ttlDefault,
+                objectMapper.convertValue(remoteAppTokenContext, new TypeReference<Map<String, Object>>() { })
+        ).getTokenValue();
+
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", token)
+                )
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageWithExpiredToken_returnUnauthorized() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                "/editor/" + product.toString().toLowerCase(),
+                Instant.now().minus(1, ChronoUnit.MINUTES),
+                1,
+                objectMapper.convertValue(remoteAppTokenContext, new TypeReference<Map<String, Object>>() { })
+        ).getTokenValue();
+
+        Thread.sleep(1000);
+
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", token)
+                )
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageWithEmptyTokenSubject_returnUnauthorized() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        String token = remoteAppJwtService.encode(
+                "",
+                "/editor/" + product.toString().toLowerCase(),
+                ttlDefault,
+                objectMapper.convertValue(remoteAppTokenContext, new TypeReference<Map<String, Object>>() { })
+        ).getTokenValue();
+
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", token)
+                )
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageWithEmptyTokenContext_returnUnauthorized() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                "/editor/" + product.toString().toLowerCase(),
+                ttlDefault,
+                Map.of()
+        ).getTokenValue();
+
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", token)
+                )
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageWithTokenContextWithoutProduct_returnUnauthorized() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        Map<String, Object> contextAsMap = objectMapper.convertValue(
+                remoteAppTokenContext,
+                new TypeReference<Map<String, Object>>() { }
+        );
+
+        contextAsMap.remove("product");
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                "/editor/" + product.toString().toLowerCase(),
+                ttlDefault,
+                contextAsMap
+        ).getTokenValue();
+
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", token)
+                )
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageWithTokenContextWithoutCloudId_returnUnauthorized() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        Map<String, Object> contextAsMap = objectMapper.convertValue(
+                remoteAppTokenContext,
+                new TypeReference<Map<String, Object>>() { }
+        );
+
+        contextAsMap.remove("cloudId");
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                "/editor/" + product.toString().toLowerCase(),
+                ttlDefault,
+                contextAsMap
+        ).getTokenValue();
+
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", token)
+                )
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageWithTokenContextWithoutEnvironmentId_returnUnauthorized()
+            throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        Map<String, Object> contextAsMap = objectMapper.convertValue(
+                remoteAppTokenContext,
+                new TypeReference<Map<String, Object>>() { }
+        );
+
+        contextAsMap.remove("environmentId");
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                "/editor/" + product.toString().toLowerCase(),
+                ttlDefault,
+                contextAsMap
+        ).getTokenValue();
+
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", token)
+                )
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageWithTokenContextWithoutParentId_returnUnauthorized() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        Map<String, Object> contextAsMap = objectMapper.convertValue(
+                remoteAppTokenContext,
+                new TypeReference<Map<String, Object>>() { }
+        );
+
+        contextAsMap.remove("parentId");
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                "/editor/" + product.toString().toLowerCase(),
+                ttlDefault,
+                contextAsMap
+        ).getTokenValue();
+
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", token)
+                )
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageWithTokenContextWithoutAttachmentId_returnUnauthorized() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        Map<String, Object> contextAsMap = objectMapper.convertValue(
+                remoteAppTokenContext,
+                new TypeReference<Map<String, Object>>() { }
+        );
+
+        contextAsMap.remove("attachmentId");
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                "/editor/" + product.toString().toLowerCase(),
+                ttlDefault,
+                contextAsMap
+        ).getTokenValue();
+
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", token)
+                )
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageWithoutModeParameter_returnBadRequest() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                "/editor/" + product.toString().toLowerCase(),
+                ttlDefault,
+                objectMapper.convertValue(remoteAppTokenContext, new TypeReference<Map<String, Object>>() { })
+        ).getTokenValue();
+
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", token)
+                )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageWithInvalidMode_returnBadRequest() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                "/editor/" + product.toString().toLowerCase(),
+                ttlDefault,
+                objectMapper.convertValue(remoteAppTokenContext, new TypeReference<Map<String, Object>>() { })
+        ).getTokenValue();
+
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", token)
+                        .param("mode", "edit")
+                )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageInEditMode_returnEditorView() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                "/editor/" + product.toString().toLowerCase(),
+                ttlDefault,
+                objectMapper.convertValue(remoteAppTokenContext, new TypeReference<Map<String, Object>>() { })
+        ).getTokenValue();
+
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.USER)))
+                .thenReturn(Instant.now().plus(2, ChronoUnit.HOURS));
+
+        when(confluenceClient.getUser(any(), any()))
+                .thenReturn(Mono.just(DataTest.ConfluenceUsers.ADMIN));
+        when(confluenceClient.getContent(any(), any(), any(), any()))
+                .thenReturn(Mono.just(DataTest.ConfluenceContents.getTestContent()));
+        when(confluenceClient.getAttachment(any(), any(), any()))
+                .thenReturn(Mono.just(DataTest.ConfluenceAttachments.ATTACHMENT_WITH_EDIT));
+        when(confluenceClient.getSettings(any(), any()))
+                .thenReturn(Mono.just(DataTest.ConfluenceSettings.CORRECT_SETTINGS));
+
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", token)
+                        .param("mode", Mode.EDIT.name())
+                ).andExpect(status().isOk())
+                .andExpect(view().name("editor"))
+                .andExpect(model().attribute("documentServerApiUrl", containsString("https://test-docs-server.com")))
+                .andExpect(model().attributeExists("sessionExpires"))
+                .andExpect(model().attribute("settings", Map.of("demo", false)));
+    }
+
+    @Test
+    public void whenGetConfluenceEditorPageInViewMode_returnEditorView() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                "/editor/" + product.toString().toLowerCase(),
+                ttlDefault,
+                objectMapper.convertValue(remoteAppTokenContext, new TypeReference<Map<String, Object>>() { })
+        ).getTokenValue();
+
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.USER)))
+                .thenReturn(Instant.now().plus(2, ChronoUnit.HOURS));
+
+        when(confluenceClient.getUser(any(), any()))
+                .thenReturn(Mono.just(DataTest.ConfluenceUsers.ADMIN));
+        when(confluenceClient.getContent(any(), any(), any(), any()))
+                .thenReturn(Mono.just(DataTest.ConfluenceContents.getTestContent()));
+        when(confluenceClient.getAttachment(any(), any(), any()))
+                .thenReturn(Mono.just(DataTest.ConfluenceAttachments.ATTACHMENT_WITH_EDIT));
+        when(confluenceClient.getSettings(any(), any()))
+                .thenReturn(Mono.just(DataTest.ConfluenceSettings.CORRECT_SETTINGS));
+
+        mockMvc.perform(get(CONFLUENCE_EDITOR_PATH)
+                        .param("token", token)
+                        .param("mode", Mode.VIEW.name())
                 ).andExpect(status().isOk())
                 .andExpect(view().name("editor"))
                 .andExpect(model().attribute("documentServerApiUrl", containsString("https://test-docs-server.com")))

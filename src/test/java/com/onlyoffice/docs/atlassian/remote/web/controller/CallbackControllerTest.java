@@ -18,6 +18,7 @@
 
 package com.onlyoffice.docs.atlassian.remote.web.controller;
 
+import com.onlyoffice.docs.atlassian.remote.api.ConfluenceContext;
 import com.onlyoffice.docs.atlassian.remote.api.Context;
 import com.onlyoffice.docs.atlassian.remote.api.JiraContext;
 import com.onlyoffice.docs.atlassian.remote.api.Product;
@@ -47,6 +48,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class CallbackControllerTest extends AbstractControllerTest {
     private static final String JIRA_CALLBACK_PATH = "/api/v1/callback/jira";
+    private static final String CONFLUENCE_CALLBACK_PATH = "/api/v1/callback/confluence";
+    private static final String TEST_PARENT_ID = "page:parentPageId";
 
     @Value("${app.security.ttl.callback}")
     private long ttlCallback;
@@ -143,6 +146,120 @@ public class CallbackControllerTest extends AbstractControllerTest {
                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                 .content(objectMapper.writeValueAsString(callback))
         ).andExpect(status().isOk());
+    }
+
+    @Test
+    public void whenPostConfluenceCallbackWithInvalidTokenFromEditor_returnUnauthorized() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                CONFLUENCE_CALLBACK_PATH,
+                ttlCallback,
+                objectMapper.convertValue(remoteAppTokenContext, new TypeReference<Map<String, Object>>() { })
+        ).getTokenValue();
+
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.USER)))
+                .thenReturn(Instant.now().plus(2, ChronoUnit.HOURS));
+
+        when(confluenceClient.getSettings(any(), any()))
+                .thenReturn(Mono.just(DataTest.ConfluenceSettings.CORRECT_SETTINGS));
+
+        mockMvc.perform(post(CONFLUENCE_CALLBACK_PATH)
+                        .param("token", token)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(DataTest.Callbacks.getTestCallback()))
+                ).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void whenPostConfluenceCallbackWithTokenInHeaderFromEditor_returnOk() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                CONFLUENCE_CALLBACK_PATH,
+                ttlCallback,
+                objectMapper.convertValue(remoteAppTokenContext, new TypeReference<Map<String, Object>>() { })
+        ).getTokenValue();
+
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.USER)))
+                .thenReturn(Instant.now().plus(2, ChronoUnit.HOURS));
+
+        when(confluenceClient.getSettings(any(), any()))
+                .thenReturn(Mono.just(DataTest.ConfluenceSettings.CORRECT_SETTINGS));
+
+        Callback callback = DataTest.Callbacks.getTestCallback();
+        Map<String, Object> payload = Map.of("payload", callback);
+        String tokenFromEditor = jwtManager.createToken(
+                objectMapper.convertValue(payload, new TypeReference<Map<String, ?>>() { }),
+                "secret"
+        );
+
+        mockMvc.perform(post(CONFLUENCE_CALLBACK_PATH)
+                        .header("Authorization", "Bearer " + tokenFromEditor)
+                        .param("token", token)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(callback))
+                ).andExpect(status().isOk());
+    }
+
+    @Test
+    public void whenPostConfluenceCallbackWithTokenInBodyFromEditor_returnOk() throws Exception {
+        Product product = Product.CONFLUENCE;
+
+        Context remoteAppTokenContext = ConfluenceContext.builder()
+                .product(product)
+                .cloudId(DataTest.testCloudId)
+                .environmentId(DataTest.testEnvironmentId)
+                .parentId(TEST_PARENT_ID)
+                .attachmentId("att123")
+                .build();
+
+        String token = remoteAppJwtService.encode(
+                DataTest.ConfluenceUsers.ADMIN.getAccountId(),
+                CONFLUENCE_CALLBACK_PATH,
+                ttlCallback,
+                objectMapper.convertValue(remoteAppTokenContext, new TypeReference<Map<String, Object>>() { })
+        ).getTokenValue();
+
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.SYSTEM)))
+                .thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+        when(xForgeTokenRepository.getXForgeTokenExpiration(anyString(), eq(XForgeTokenType.USER)))
+                .thenReturn(Instant.now().plus(2, ChronoUnit.HOURS));
+
+        when(confluenceClient.getSettings(any(), any()))
+                .thenReturn(Mono.just(DataTest.ConfluenceSettings.CORRECT_SETTINGS));
+
+        Callback callback = DataTest.Callbacks.getTestCallback();
+        String tokenFromEditor = jwtManager.createToken(callback, "secret");
+        callback.setToken(tokenFromEditor);
+
+        mockMvc.perform(post(CONFLUENCE_CALLBACK_PATH)
+                        .param("token", token)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(callback))
+                ).andExpect(status().isOk());
     }
 
     @Test
